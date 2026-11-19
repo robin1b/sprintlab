@@ -4,6 +4,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Administrators
+    |--------------------------------------------------------------------------
+    |
+    | GitHub user ids (numbers, comma separated in .env) that may see the
+    | admin pages, such as the AI usage overview.
+    |
+    */
+
+    'admin_github_ids' => array_values(array_filter(array_map(
+        'intval',
+        explode(',', (string) env('SPRINTLAB_ADMIN_GITHUB_IDS', '')),
+    ))),
+
+    /*
+    |--------------------------------------------------------------------------
     | AI colleagues
     |--------------------------------------------------------------------------
     |
@@ -36,6 +51,19 @@ return [
 
         // A review of a colleague's pull request passes from this score (0-100).
         'review_pass_score' => 50,
+
+        // When this month's AI cost reaches the budget, the colleagues stop
+        // calling the model until the next month. 0 switches the cap off.
+        'monthly_budget_usd' => (float) env('SPRINTLAB_AI_MONTHLY_BUDGET', 10),
+
+        // US dollars per million tokens, per model family (matched on the
+        // start of the model name). Prices change: check them now and then.
+        'prices_checked_on' => '2026-11-15',
+        'prices' => [
+            'claude-haiku-5-5' => ['input' => 0.10, 'output' => 0.50],
+            'claude-sonnet-5-5' => ['input' => 2.00, 'output' => 10.00],
+            'claude-opus-5-5' => ['input' => 4.00, 'output' => 20.00],
+        ],
     ],
 
     /*
