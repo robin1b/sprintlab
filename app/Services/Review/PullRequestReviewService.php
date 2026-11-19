@@ -178,13 +178,16 @@ class PullRequestReviewService
         ]);
     }
 
+    /**
+     * What the reviewer gets to read. The author's GitHub username is left
+     * out on purpose: the privacy page promises it is not sent to the AI.
+     */
     private function prompt(PullRequest $pullRequest, DiffSummary $diff): string
     {
         $description = trim((string) $pullRequest->body) !== '' ? trim((string) $pullRequest->body) : '(no description)';
 
         $prompt = <<<TEXT
         Pull request #{$pullRequest->number}: {$pullRequest->title}
-        Author: {$pullRequest->author_login}
         Branch: {$pullRequest->head_ref} into {$pullRequest->base_ref}
 
         Description:

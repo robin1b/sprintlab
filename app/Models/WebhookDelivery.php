@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -20,6 +22,18 @@ use Illuminate\Support\Carbon;
 #[Fillable(['delivery_id', 'event', 'action', 'payload', 'processed_at', 'error'])]
 class WebhookDelivery extends Model
 {
+    use MassPrunable;
+
+    /**
+     * Deliveries older than the retention period are removed by `model:prune`.
+     *
+     * @return Builder<static>
+     */
+    public function prunable(): Builder
+    {
+        return static::query()->where('created_at', '<', Carbon::now()->subDays((int) config('sprintlab.retention.webhook_days')));
+    }
+
     /**
      * @return array<string, string>
      */

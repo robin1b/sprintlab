@@ -86,6 +86,8 @@ class WebhookHandlerTest extends TestCase
 
     public function test_an_opened_pull_request_is_stored_and_sent_for_review(): void
     {
+        $this->repositoryOwnerHasAnAccount();
+
         $this->githubWebhook('pull_request', $this->pullRequestPayload());
 
         $pullRequest = PullRequest::sole();
@@ -103,6 +105,8 @@ class WebhookHandlerTest extends TestCase
 
     public function test_a_new_push_updates_the_pull_request_and_asks_for_a_new_review(): void
     {
+        $this->repositoryOwnerHasAnAccount();
+
         $this->githubWebhook('pull_request', $this->pullRequestPayload(), 'delivery-1');
         $this->githubWebhook('pull_request', $this->pullRequestPayload('synchronize', [
             'head' => ['sha' => str_repeat('b', 40)],
@@ -114,6 +118,8 @@ class WebhookHandlerTest extends TestCase
 
     public function test_a_draft_pull_request_is_not_reviewed_until_it_is_ready(): void
     {
+        $this->repositoryOwnerHasAnAccount();
+
         $this->githubWebhook('pull_request', $this->pullRequestPayload('opened', ['draft' => true]), 'delivery-1');
         Bus::assertNotDispatched(ReviewPullRequest::class);
 
@@ -123,6 +129,8 @@ class WebhookHandlerTest extends TestCase
 
     public function test_a_pull_request_opened_by_a_bot_is_not_reviewed(): void
     {
+        $this->repositoryOwnerHasAnAccount();
+
         $this->githubWebhook('pull_request', $this->pullRequestPayload('opened', [
             'user' => ['login' => 'sprintlab[bot]', 'type' => 'Bot'],
         ]));
@@ -133,6 +141,8 @@ class WebhookHandlerTest extends TestCase
 
     public function test_closing_and_merging_update_the_state_without_a_review(): void
     {
+        $this->repositoryOwnerHasAnAccount();
+
         $this->githubWebhook('pull_request', $this->pullRequestPayload('closed', ['state' => 'closed']), 'delivery-1');
         $this->assertSame(PullRequestState::Closed, PullRequest::sole()->state);
 
@@ -147,5 +157,49 @@ class WebhookHandlerTest extends TestCase
         $this->githubWebhook('ping', ['zen' => 'Keep it simple.'])->assertStatus(202);
 
         $this->assertNotNull(WebhookDelivery::sole()->processed_at);
+    }
+
+    public function test_a_pull_request_of_an_unknown_installation_without_an_account_is_ignored(): void
+    {
+        // For example a late event after the owner deleted their Sprintlab account.
+        $this->githubWebhook('pull_request', $this->pullRequestPayload())->assertStatus(202);
+
+        $this->assertSame(0, GitHubInstallation::count());
+        $this->assertSame(0, Repository::count());
+        $this->assertSame(0, PullRequest::count());
+        Bus::assertNotDispatched(ReviewPullRequest::class);
+        $this->assertNotNull(WebhookDelivery::sole()->processed_at);
+    }
+
+    public function test_a_pull_request_of_a_known_installation_without_an_account_is_stored(): void
+    {
+        // The app was installed before its owner signed in to Sprintlab.
+        $this->githubWebhook('installation', $this->installationPayload(senderId: 1), 'delivery-1');
+        $this->githubWebhook('pull_request', $this->pullRequestPayload(), 'delivery-2');
+
+        $this->assertSame(1, PullRequest::count());
+    }
+
+    public function test_changed_repositories_of_an_unknown_installation_without_an_account_are_ignored(): void
+    {
+        $this->githubWebhook('installation_repositories', [
+            'action' => 'added',
+            'installation' => ['id' => 9001, 'account' => ['login' => 'robin', 'id' => 4242]],
+            'repositories_added' => [['id' => 7002, 'full_name' => 'robin/second', 'private' => false]],
+            'repositories_removed' => [],
+            'sender' => ['id' => 4242],
+        ]);
+
+        $this->assertSame(0, GitHubInstallation::count());
+        $this->assertSame(0, Repository::count());
+    }
+
+    /**
+     * Events other than `installation` only count when the installation is
+     * known or its GitHub account has a Sprintlab user.
+     */
+    private function repositoryOwnerHasAnAccount(): User
+    {
+        return User::factory()->create(['github_id' => 4242]);
     }
 }

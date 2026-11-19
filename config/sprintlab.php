@@ -19,6 +19,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Contact and privacy
+    |--------------------------------------------------------------------------
+    |
+    | Shown on the privacy page. Without an email address the page points to
+    | the contact page instead. Webhook messages from GitHub are removed after
+    | the number of days below; the privacy page reads the same number.
+    |
+    */
+
+    'contact_email' => env('SPRINTLAB_CONTACT_EMAIL'),
+
+    'contact_url' => env('SPRINTLAB_CONTACT_URL', 'https://robinbroos.com/contact'),
+
+    'retention' => [
+        'webhook_days' => (int) env('SPRINTLAB_WEBHOOK_RETENTION_DAYS', 30),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Evaluation after a sprint
     |--------------------------------------------------------------------------
     |

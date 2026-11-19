@@ -6,6 +6,7 @@ use Firebase\JWT\JWT;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
@@ -70,6 +71,35 @@ class GitHubApp
     public function installation(int $installationId): InstallationClient
     {
         return new InstallationClient($this->installationToken($installationId), $this->apiUrl());
+    }
+
+    /**
+     * Remove the app from an account on GitHub's side. Needs the app JWT, not
+     * an installation token. True when the installation is gone (a 404 means
+     * it already was), false when the app is not configured; other failures throw.
+     */
+    public function deleteInstallation(int $installationId): bool
+    {
+        if (! $this->isConfigured()) {
+            Log::info("GitHub App is not configured: installation {$installationId} was not removed on GitHub.");
+
+            return false;
+        }
+
+        Cache::forget("github.installation-token.{$installationId}");
+
+        $response = Http::withToken($this->jwt())
+            ->withHeaders(InstallationClient::HEADERS)
+            ->timeout(15)
+            ->delete($this->apiUrl()."/app/installations/{$installationId}");
+
+        if ($response->status() === 404) {
+            return true;
+        }
+
+        $response->throw();
+
+        return true;
     }
 
     private function apiUrl(): string

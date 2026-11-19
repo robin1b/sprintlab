@@ -103,7 +103,9 @@ class PullRequestReviewTest extends TestCase
         PullRequestReviewer::assertPrompted(fn (AgentPrompt $prompt) => $prompt->contains('Fix double approval of lease requests')
             && $prompt->contains('Approving twice no longer creates two contracts.')
             && $prompt->contains('File: app/Models/LeaseRequest.php')
-            && $prompt->contains("+    12 |     if (\$this->status === 'approved') {"));
+            && $prompt->contains("+    12 |     if (\$this->status === 'approved') {")
+            // The privacy page promises that the GitHub username stays here.
+            && ! $prompt->contains('Author:'));
     }
 
     public function test_a_comment_on_a_line_outside_the_diff_moves_into_the_review_text(): void

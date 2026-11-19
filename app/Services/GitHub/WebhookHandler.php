@@ -79,6 +79,10 @@ class WebhookHandler
      */
     private function installationRepositories(array $payload): void
     {
+        if (! $this->mayStore((int) data_get($payload, 'installation.id'), (int) data_get($payload, 'sender.id'))) {
+            return;
+        }
+
         $installation = $this->storeInstallation(
             (int) data_get($payload, 'installation.id'),
             (string) data_get($payload, 'installation.account.login'),
@@ -105,6 +109,10 @@ class WebhookHandler
      */
     private function pullRequest(string $action, array $payload): void
     {
+        if (! $this->mayStore((int) data_get($payload, 'installation.id'), (int) data_get($payload, 'repository.owner.id'))) {
+            return;
+        }
+
         // A pull request event only carries the installation id, so the
         // account comes from the repository owner.
         $installation = $this->storeInstallation(
@@ -187,6 +195,18 @@ class WebhookHandler
         if ($ticket !== null) {
             AssessUserReview::dispatch($ticket->id, $reviewId);
         }
+    }
+
+    /**
+     * An `installation` event is someone installing the app, so it is always
+     * stored. Any other event only counts when we know its installation, or
+     * when its GitHub account has a Sprintlab user: after an account was
+     * deleted, a late event must not bring that person's data back.
+     */
+    private function mayStore(int $installationId, int $githubUserId): bool
+    {
+        return GitHubInstallation::where('installation_id', $installationId)->exists()
+            || User::where('github_id', $githubUserId)->exists();
     }
 
     private function storeInstallation(int $installationId, string $accountLogin, int $accountId, int $githubUserId): GitHubInstallation
