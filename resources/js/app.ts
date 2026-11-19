@@ -10,7 +10,8 @@ void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {
-            case name === 'Welcome':
+            // Public pages and the error page stand on their own, without the app shell.
+            case ['Welcome', 'Privacy', 'ErrorPage'].includes(name):
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;

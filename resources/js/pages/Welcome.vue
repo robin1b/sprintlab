@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import SiteFooter from '@/components/site/SiteFooter.vue';
 import { Button } from '@/components/ui/button';
 import { dashboard, login } from '@/routes';
 
@@ -51,5 +52,7 @@ const points = [
                 </div>
             </div>
         </main>
+
+        <SiteFooter />
     </div>
 </template>

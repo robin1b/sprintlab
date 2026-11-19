@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import SiteFooter from '@/components/site/SiteFooter.vue';
 import { home } from '@/routes';
 
 defineProps<{
@@ -39,5 +40,6 @@ defineProps<{
                 </div>
             </div>
         </div>
+        <SiteFooter class="mt-6" />
     </div>
 </template>

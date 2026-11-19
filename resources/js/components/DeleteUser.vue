@@ -52,9 +52,11 @@ import {
                                 account?</DialogTitle
                             >
                             <DialogDescription>
-                                Once your account is deleted, all of its
-                                resources and data will also be permanently
-                                deleted.
+                                Deleting your account removes your account, your
+                                sprints, messages, reviews and evaluations, and
+                                removes the Sprintlab app from your repository.
+                                Reviews that were already posted on GitHub stay
+                                on GitHub.
                             </DialogDescription>
                         </DialogHeader>
 
