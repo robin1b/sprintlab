@@ -19,6 +19,35 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Evaluation after a sprint
+    |--------------------------------------------------------------------------
+    |
+    | Each area gets a score from 0 to 100. The overall score is the weighted
+    | average of the areas that could be judged. A user moves up a level after
+    | enough passed sprints at their current level.
+    |
+    */
+
+    'evaluation' => [
+        'weights' => [
+            'delivery' => 20,
+            'code_quality' => 25,
+            'review' => 15,
+            'communication' => 15,
+            'process' => 10,
+            'understanding' => 15,
+        ],
+
+        'pass_score' => 70,
+
+        'sprints_to_promote' => 3,
+
+        // Longest answer a user can give to one evaluation question.
+        'answer_max_characters' => 2000,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | AI colleagues
     |--------------------------------------------------------------------------
     |
