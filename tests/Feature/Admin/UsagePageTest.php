@@ -76,7 +76,7 @@ class UsagePageTest extends TestCase
                 ->where('limit_micros', 10_000_000)
                 ->where('remaining_micros', 10_000_000 - 43_000)
                 ->where('prices_checked_on', '2026-11-15')
-                ->has('features', 3)
+                ->has('features', 4)
                 ->where('features.0', ['key' => 'review', 'label' => 'Pull request review', 'calls' => 1, 'input_tokens' => 5000, 'output_tokens' => 500, 'cost_micros' => 40_000])
                 ->where('features.1', ['key' => 'chat', 'label' => 'Chat reply', 'calls' => 2, 'input_tokens' => 300, 'output_tokens' => 30, 'cost_micros' => 3000])
                 ->where('features.2.calls', 1)

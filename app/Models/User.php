@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Level;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -18,6 +19,7 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string|null $email
  * @property string|null $avatar_url
+ * @property Level $level
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -38,6 +40,7 @@ class User extends Authenticatable
     {
         return [
             'github_id' => 'integer',
+            'level' => Level::class,
         ];
     }
 

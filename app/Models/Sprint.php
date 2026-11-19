@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -95,6 +96,14 @@ class Sprint extends Model
     public function sprintEvents(): HasMany
     {
         return $this->hasMany(SprintEvent::class);
+    }
+
+    /**
+     * @return HasOne<SprintEvaluation, $this>
+     */
+    public function evaluation(): HasOne
+    {
+        return $this->hasOne(SprintEvaluation::class);
     }
 
     public function isActive(): bool

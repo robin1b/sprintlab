@@ -5,6 +5,7 @@ namespace App\Services\Sprint;
 use App\Enums\ScenarioTrigger;
 use App\Enums\SprintStatus;
 use App\Enums\TicketStatus;
+use App\Jobs\PrepareSprintEvaluation;
 use App\Models\Sprint;
 use App\Models\Ticket;
 use App\Services\Scenario\ScenarioEngine;
@@ -91,5 +92,8 @@ class TicketService
         $sprint->update(['status' => SprintStatus::Completed, 'completed_at' => Carbon::now()]);
 
         $this->engine->dispatch($sprint, ScenarioTrigger::SprintCompleted);
+
+        // After the commit, so the job always finds the completed sprint.
+        PrepareSprintEvaluation::dispatch($sprint->id)->afterCommit();
     }
 }

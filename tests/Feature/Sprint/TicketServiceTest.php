@@ -16,6 +16,7 @@ use App\Services\Sprint\SprintService;
 use App\Services\Sprint\TicketService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\Support\SprintFixtures;
 use Tests\TestCase;
 
@@ -236,6 +237,9 @@ class TicketServiceTest extends TestCase
 
     public function test_finishing_the_last_day_completes_the_sprint_and_sends_the_closing_message(): void
     {
+        // The evaluation job is not under test here (and would add a message).
+        Queue::fake();
+
         $sprint = $this->startDemoSprint();
 
         foreach (['WK-1', 'WK-2', 'WK-3'] as $key) {
@@ -258,6 +262,9 @@ class TicketServiceTest extends TestCase
 
     public function test_a_delayed_closing_message_still_arrives_after_the_sprint_is_completed(): void
     {
+        // The evaluation job is not under test here (and would add a message).
+        Queue::fake();
+
         $sprint = $this->startDemoSprint();
         ScenarioEvent::where('key', 'sprint-closing')->sole()->update(['delay_minutes' => 30]);
 

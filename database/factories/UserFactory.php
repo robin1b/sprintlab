@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\Level;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -24,6 +25,7 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'avatar_url' => null,
+            'level' => Level::Junior,
             'remember_token' => Str::random(10),
         ];
     }
