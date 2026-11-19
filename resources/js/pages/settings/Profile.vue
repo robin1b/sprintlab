@@ -34,7 +34,7 @@ const user = computed(() => page.props.auth.user);
         <Heading
             variant="small"
             title="Profile"
-            description="Update your name and email address"
+            description="Update your name and optional email address"
         />
 
         <Form
@@ -57,14 +57,13 @@ const user = computed(() => page.props.auth.user);
             </div>
 
             <div class="grid gap-2">
-                <Label for="email">Email address</Label>
+                <Label for="email">Email address (optional)</Label>
                 <Input
                     id="email"
                     type="email"
                     class="mt-1 block w-full"
                     name="email"
-                    :default-value="user.email"
-                    required
+                    :default-value="user.email ?? ''"
                     autocomplete="username"
                     placeholder="Email address"
                 />

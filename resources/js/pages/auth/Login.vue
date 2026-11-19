@@ -1,101 +1,55 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
-import InputError from '@/components/InputError.vue';
-import PasswordInput from '@/components/PasswordInput.vue';
-import TextLink from '@/components/TextLink.vue';
+import { Head, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import { store } from '@/routes/login';
-import { request } from '@/routes/password';
+import { redirect as githubRedirect } from '@/routes/auth/github';
 
 defineOptions({
     layout: {
-        title: 'Log in to your account',
-        description: 'Enter your email and password below to log in',
+        title: 'Sign in to Sprintlab',
+        description: 'Sign in with your GitHub account to continue',
     },
 });
 
 defineProps<{
-    status?: string;
-    canResetPassword: boolean;
+    devLogin?: boolean;
 }>();
+
+// The dev login route only exists locally, so it is not imported from the
+// generated routes (they would be missing in a production build).
+const page = usePage();
+const error = computed(() => page.props.flash.error);
 </script>
 
 <template>
-    <Head title="Log in" />
+    <Head title="Sign in" />
 
-    <div
-        v-if="status"
-        class="mb-4 text-center text-sm font-medium text-green-600"
-    >
-        {{ status }}
-    </div>
-
-    <Form
-        v-bind="store.form()"
-        :reset-on-success="['password']"
-        v-slot="{ errors, processing }"
-        class="flex flex-col gap-6"
-    >
-        <div class="grid gap-6">
-            <div class="grid gap-2">
-                <Label for="email">Email address</Label>
-                <Input
-                    id="email"
-                    type="email"
-                    name="email"
-                    required
-                    v-focus
-                    :tabindex="1"
-                    autocomplete="email"
-                    placeholder="email@example.com"
-                />
-                <InputError :message="errors.email" />
-            </div>
-
-            <div class="grid gap-2">
-                <div class="flex items-center justify-between">
-                    <Label for="password">Password</Label>
-                    <TextLink
-                        v-if="canResetPassword"
-                        :href="request()"
-                        class="text-sm"
-                        :tabindex="5"
-                    >
-                        Forgot your password?
-                    </TextLink>
-                </div>
-                <PasswordInput
-                    id="password"
-                    name="password"
-                    required
-                    :tabindex="2"
-                    autocomplete="current-password"
-                    placeholder="Password"
-                />
-                <InputError :message="errors.password" />
-            </div>
-
-            <div class="flex items-center justify-between">
-                <Label for="remember" class="flex items-center space-x-3">
-                    <Checkbox id="remember" name="remember" :tabindex="3" />
-                    <span>Remember me</span>
-                </Label>
-            </div>
-
-            <Button
-                type="submit"
-                class="mt-4 w-full"
-                :tabindex="4"
-                :disabled="processing"
-                data-test="login-button"
-            >
-                <Spinner v-if="processing" />
-                Log in
-            </Button>
+    <div class="flex flex-col gap-6">
+        <div
+            v-if="error"
+            role="alert"
+            class="text-center text-sm font-medium text-destructive"
+            data-test="login-error"
+        >
+            {{ error }}
         </div>
-    </Form>
+
+        <Button as-child class="w-full" data-test="github-login-button">
+            <a :href="githubRedirect.url()">Continue with GitHub</a>
+        </Button>
+
+        <p class="text-center text-sm text-muted-foreground">
+            Sprintlab reviews your pull requests on GitHub, so we need you to
+            sign in with your GitHub account.
+        </p>
+
+        <div v-if="devLogin" class="text-center text-sm">
+            <a
+                href="/dev/login"
+                class="text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                data-test="dev-login-link"
+                >Dev login (local only)</a
+            >
+        </div>
+    </div>
 </template>

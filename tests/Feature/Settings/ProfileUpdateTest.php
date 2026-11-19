@@ -10,133 +10,85 @@ class ProfileUpdateTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_profile_page_is_displayed()
+    protected function setUp(): void
     {
-        $user = User::factory()->create();
+        parent::setUp();
 
-        $response = $this
-            ->actingAs($user)
-            ->get(route('profile.edit'));
-
-        $response->assertOk();
+        $this->withoutVite();
     }
 
-    public function test_profile_information_can_be_updated()
+    public function test_profile_page_is_displayed(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->get(route('profile.edit'))
+            ->assertOk();
+    }
+
+    public function test_guests_cannot_see_the_profile_page(): void
+    {
+        $this->get(route('profile.edit'))->assertRedirect(route('login'));
+    }
+
+    public function test_profile_information_can_be_updated(): void
     {
         $user = User::factory()->create();
 
-        $response = $this
-            ->actingAs($user)
-            ->patch(route('profile.update'), [
-                'name' => 'Test User',
-                'email' => 'test@example.com',
-            ]);
-
-        $response
+        $this->actingAs($user)
+            ->patch(route('profile.update'), ['name' => 'New Name', 'email' => 'New@Example.com'])
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('profile.edit'));
 
         $user->refresh();
-
-        $this->assertSame('Test User', $user->name);
-        $this->assertSame('test@example.com', $user->email);
-        $this->assertNull($user->email_verified_at);
+        $this->assertSame('New Name', $user->name);
+        $this->assertSame('new@example.com', $user->email);
     }
 
-    public function test_email_is_stored_in_lowercase_so_the_user_can_still_log_in()
+    public function test_email_is_optional(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['email' => 'x@example.com']);
 
-        $this
-            ->actingAs($user)
-            ->patch(route('profile.update'), [
-                'name' => 'Test User',
-                'email' => 'Test@Example.com',
-            ])
+        $this->actingAs($user)
+            ->patch(route('profile.update'), ['name' => 'Name', 'email' => ''])
             ->assertSessionHasNoErrors();
 
-        $this->assertSame('test@example.com', $user->refresh()->email);
-
-        $this->post(route('logout'));
-
-        $this->post(route('login.store'), [
-            'email' => 'Test@Example.com',
-            'password' => 'password',
-        ]);
-
-        $this->assertAuthenticatedAs($user);
+        $this->assertNull($user->refresh()->email);
     }
 
-    public function test_email_must_be_unique_regardless_of_case()
-    {
-        User::factory()->create(['email' => 'taken@example.com']);
-
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->from(route('profile.edit'))
-            ->patch(route('profile.update'), [
-                'name' => 'Test User',
-                'email' => 'Taken@Example.com',
-            ]);
-
-        $response
-            ->assertSessionHasErrors('email')
-            ->assertRedirect(route('profile.edit'));
-    }
-
-    public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged()
+    public function test_keeping_the_same_email_is_allowed(): void
     {
         $user = User::factory()->create();
 
-        $response = $this
-            ->actingAs($user)
-            ->patch(route('profile.update'), [
-                'name' => 'Test User',
-                'email' => $user->email,
-            ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('profile.edit'));
-
-        $this->assertNotNull($user->refresh()->email_verified_at);
+        $this->actingAs($user)
+            ->patch(route('profile.update'), ['name' => 'Name', 'email' => $user->email])
+            ->assertSessionHasNoErrors();
     }
 
-    public function test_user_can_delete_their_account()
+    public function test_email_must_be_unique(): void
+    {
+        $other = User::factory()->create();
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->patch(route('profile.update'), ['name' => 'Name', 'email' => $other->email])
+            ->assertSessionHasErrors('email');
+    }
+
+    public function test_name_is_required(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->patch(route('profile.update'), ['name' => '', 'email' => null])
+            ->assertSessionHasErrors('name');
+    }
+
+    public function test_user_can_delete_their_account_without_a_password(): void
     {
         $user = User::factory()->create();
 
-        $response = $this
-            ->actingAs($user)
-            ->delete(route('profile.destroy'), [
-                'password' => 'password',
-            ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('home'));
+        $this->actingAs($user)
+            ->delete(route('profile.destroy'))
+            ->assertRedirect('/');
 
         $this->assertGuest();
         $this->assertNull($user->fresh());
-    }
-
-    public function test_correct_password_must_be_provided_to_delete_account()
-    {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->from(route('profile.edit'))
-            ->delete(route('profile.destroy'), [
-                'password' => 'wrong-password',
-            ]);
-
-        $response
-            ->assertSessionHasErrors('password')
-            ->assertRedirect(route('profile.edit'));
-
-        $this->assertNotNull($user->fresh());
     }
 }
