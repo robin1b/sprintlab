@@ -23,6 +23,19 @@ return [
         'max_diff_characters' => 60000,
 
         'max_inline_comments' => 8,
+
+        // Chat replies from colleagues use a cheaper, faster model.
+        'chat_model' => env('SPRINTLAB_CHAT_MODEL', 'claude-haiku-5-5'),
+
+        'chat_replies_per_sprint_per_day' => (int) env('SPRINTLAB_CHAT_REPLIES_PER_DAY', 40),
+
+        // How many earlier messages of a conversation the model gets to see.
+        'chat_history_messages' => 20,
+
+        'chat_max_characters' => 2000,
+
+        // A review of a colleague's pull request passes from this score (0-100).
+        'review_pass_score' => 50,
     ],
 
     /*
