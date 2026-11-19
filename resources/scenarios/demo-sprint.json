@@ -1,104 +1,104 @@
 {
-  "slug": "demo-sprint",
-  "title": "Demo sprint",
-  "level": "junior",
-  "summary": "A short two-day sprint at Workkit to try out the platform: one bug, two small features and a requirement that changes halfway.",
-  "duration_days": 2,
-  "tickets": [
-    {
-      "key": "WK-1",
-      "day": 1,
-      "type": "bug",
-      "reporter": "sarah",
-      "title": "A lease request can be approved twice",
-      "description": "Sales reported that a few lease requests ended up with two contracts for the same laptop. The approver says they only clicked once, but the approve button stays active for a moment and the request seems to go through twice when the page is slow.\n\nPlease find out why this can happen and make sure a request can only ever be approved once.",
-      "acceptance_criteria": [
-        "A lease request that is already approved cannot be approved again",
-        "Approving the same request twice never creates a second contract",
-        "A test covers the double approval"
-      ],
-      "released_at_start": true
-    },
-    {
-      "key": "WK-2",
-      "day": 1,
-      "type": "feature",
-      "reporter": "daniel",
-      "title": "Filter the catalogue by monthly budget",
-      "description": "Employees browse the catalogue of laptops and smartphones, but they think in monthly amounts, not in purchase prices. Several customers asked if they can enter the amount they want to spend per month and only see devices they can lease for that amount.",
-      "acceptance_criteria": [
-        "The catalogue has a filter for the maximum monthly price",
-        "Only devices that can be leased for that amount or less are shown",
-        "An empty filter shows the whole catalogue",
-        "The filter is part of the URL so a filtered list can be shared"
-      ],
-      "released_at_start": true
-    },
-    {
-      "key": "WK-3",
-      "day": 2,
-      "type": "feature",
-      "reporter": "daniel",
-      "title": "Show the repair status to the employee",
-      "description": "When a leased device is broken, the employee reports it and Repairs takes it in. Right now the employee has no idea what is going on after that and phones HR. Claire from the customer's HR team would like the employee to see the status of the repair on the device page.",
-      "acceptance_criteria": [
-        "The device page shows the current repair status when there is an open repair",
-        "The employee sees the date of the last status change",
-        "A device without an open repair shows no repair section"
-      ],
-      "released_at_start": true
-    }
-  ],
-  "events": [
-    {
-      "key": "welcome",
-      "on": "sprint_started",
-      "action": "message",
-      "colleague": "sarah",
-      "body": "Hi {first_name}, welcome to the Workkit team! I'm Sarah, the team lead. Take your time to get familiar with the codebase. If something is unclear, just ask. Daniel will walk you through today's tickets in a minute."
-    },
-    {
-      "key": "day-1-intro",
-      "on": "day_started",
-      "day": 1,
-      "action": "message",
-      "colleague": "daniel",
-      "body": "Hey {first_name}, Daniel here, I'm the project manager. Two tickets for you today: WK-1 is a bug Sales keeps running into, WK-2 is a small feature customers have been asking for. Open a pull request when you think a ticket is ready and Sarah will have a look."
-    },
-    {
-      "key": "change-wk-2",
-      "on": "ticket_in_review",
-      "ticket": "WK-2",
-      "delay_minutes": 0,
-      "action": "update_ticket",
-      "colleague": "daniel",
-      "body": "Sorry {first_name}, a small change on WK-2: I just talked to Sales and they want to use the same filter to find devices that are for sale. I added it to the acceptance criteria. Can you take it into account?",
-      "add_criteria": [
-        "The filter can also be limited to devices that are for sale"
-      ]
-    },
-    {
-      "key": "day-2-intro",
-      "on": "day_started",
-      "day": 2,
-      "action": "message",
-      "colleague": "daniel",
-      "body": "Good morning {first_name}! Day two. Today there is one ticket, WK-3. Claire from the customer's HR team has asked for it twice already, so she is looking forward to this one."
-    },
-    {
-      "key": "wk-3-done",
-      "on": "ticket_done",
-      "ticket": "WK-3",
-      "action": "message",
-      "colleague": "sarah",
-      "body": "WK-3 is merged, nice work. Employees will phone HR a lot less now."
-    },
-    {
-      "key": "sprint-closing",
-      "on": "sprint_completed",
-      "action": "message",
-      "colleague": "sarah",
-      "body": "That's the sprint wrapped up, {first_name}. Thanks for the work these two days. Have a look back at your pull requests and see what you would do differently next time."
-    }
-  ]
+    "slug": "demo-sprint",
+    "title": "Demo sprint",
+    "level": "junior",
+    "summary": "A short two-day sprint at Workkit to try out the platform: one bug, two small features and a requirement that changes halfway.",
+    "duration_days": 2,
+    "tickets": [
+        {
+            "key": "WK-1",
+            "day": 1,
+            "type": "bug",
+            "reporter": "sarah",
+            "title": "A lease request can be approved twice",
+            "description": "Sales reported that a few lease requests ended up with two contracts for the same laptop. The approver says they only clicked once, but the approve button stays active for a moment and the request seems to go through twice when the page is slow.\n\nPlease find out why this can happen and make sure a request can only ever be approved once.",
+            "acceptance_criteria": [
+                "A lease request that is already approved cannot be approved again",
+                "Approving the same request twice never creates a second contract",
+                "A test covers the double approval"
+            ],
+            "released_at_start": true
+        },
+        {
+            "key": "WK-2",
+            "day": 1,
+            "type": "feature",
+            "reporter": "daniel",
+            "title": "Filter the catalogue by monthly budget",
+            "description": "Employees browse the catalogue of laptops and smartphones, but they think in monthly amounts, not in purchase prices. Several customers asked if they can enter the amount they want to spend per month and only see devices they can lease for that amount.",
+            "acceptance_criteria": [
+                "The catalogue has a filter for the maximum monthly price",
+                "Only devices that can be leased for that amount or less are shown",
+                "An empty filter shows the whole catalogue",
+                "The filter is part of the URL so a filtered list can be shared"
+            ],
+            "released_at_start": true
+        },
+        {
+            "key": "WK-3",
+            "day": 2,
+            "type": "feature",
+            "reporter": "daniel",
+            "title": "Show the repair status to the employee",
+            "description": "When a leased device is broken, the employee reports it and Repairs takes it in. Right now the employee has no idea what is going on after that and phones HR. Claire from the customer's HR team would like the employee to see the status of the repair on the device page.",
+            "acceptance_criteria": [
+                "The device page shows the current repair status when there is an open repair",
+                "The employee sees the date of the last status change",
+                "A device without an open repair shows no repair section"
+            ],
+            "released_at_start": true
+        }
+    ],
+    "events": [
+        {
+            "key": "welcome",
+            "on": "sprint_started",
+            "action": "message",
+            "colleague": "sarah",
+            "body": "Hi {first_name}, welcome to the Workkit team! I'm Sarah, the team lead. Take your time to get familiar with the codebase. If something is unclear, just ask. Daniel will walk you through today's tickets in a minute."
+        },
+        {
+            "key": "day-1-intro",
+            "on": "day_started",
+            "day": 1,
+            "action": "message",
+            "colleague": "daniel",
+            "body": "Hey {first_name}, Daniel here, I'm the project manager. Two tickets for you today: WK-1 is a bug Sales keeps running into, WK-2 is a small feature customers have been asking for. Open a pull request when you think a ticket is ready and Sarah will have a look."
+        },
+        {
+            "key": "change-wk-2",
+            "on": "ticket_in_review",
+            "ticket": "WK-2",
+            "delay_minutes": 0,
+            "action": "update_ticket",
+            "colleague": "daniel",
+            "body": "Sorry {first_name}, a small change on WK-2: I just talked to Sales and they want to use the same filter to find devices that are for sale. I added it to the acceptance criteria. Can you take it into account?",
+            "add_criteria": [
+                "The filter can also be limited to devices that are for sale"
+            ]
+        },
+        {
+            "key": "day-2-intro",
+            "on": "day_started",
+            "day": 2,
+            "action": "message",
+            "colleague": "daniel",
+            "body": "Good morning {first_name}! Day two. Today there is one ticket, WK-3. Claire from the customer's HR team has asked for it twice already, so she is looking forward to this one."
+        },
+        {
+            "key": "wk-3-done",
+            "on": "ticket_done",
+            "ticket": "WK-3",
+            "action": "message",
+            "colleague": "sarah",
+            "body": "WK-3 is merged, nice work. Employees will phone HR a lot less now."
+        },
+        {
+            "key": "sprint-closing",
+            "on": "sprint_completed",
+            "action": "message",
+            "colleague": "sarah",
+            "body": "That's the sprint wrapped up, {first_name}. Thanks for the work these two days. Have a look back at your pull requests and see what you would do differently next time."
+        }
+    ]
 }

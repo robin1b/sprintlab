@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Sprint;
+use App\Services\Sprint\SprintService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -51,7 +53,59 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
                 'success' => $request->session()->get('success'),
             ],
+            'sprint' => fn () => $this->sprintProps($request),
+            'unreadMessages' => fn () => $this->unreadMessages($request),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
+    }
+
+    /**
+     * The user's current sprint, in the small shape the top bar needs.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function sprintProps(Request $request): ?array
+    {
+        $sprint = $this->currentSprint($request);
+
+        if ($sprint === null) {
+            return null;
+        }
+
+        return [
+            'id' => $sprint->id,
+            'status' => $sprint->status->value,
+            'scenario_title' => $sprint->scenario->title,
+            'current_day' => $sprint->current_day,
+            'duration_days' => $sprint->scenario->duration_days,
+            'deadline_at' => $sprint->deadline_at->toIso8601String(),
+            'is_overdue' => $sprint->isOverdue(),
+        ];
+    }
+
+    private function unreadMessages(Request $request): int
+    {
+        return $this->currentSprint($request)?->messages()
+            ->where('from_user', false)
+            ->whereNull('read_at')
+            ->count() ?? 0;
+    }
+
+    /**
+     * Both shared props need the sprint: look it up once per request.
+     */
+    private function currentSprint(Request $request): ?Sprint
+    {
+        $user = $request->user();
+
+        if ($user === null) {
+            return null;
+        }
+
+        if (! $request->attributes->has('current_sprint')) {
+            $request->attributes->set('current_sprint', app(SprintService::class)->currentFor($user)?->load('scenario'));
+        }
+
+        return $request->attributes->get('current_sprint');
     }
 }

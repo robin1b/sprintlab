@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { KanbanSquare, LayoutGrid, MessageSquare } from '@lucide/vue';
+import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -16,11 +17,18 @@ import {
 import { board, chat, dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
+const page = usePage();
+
+const mainNavItems = computed<NavItem[]>(() => [
     { title: 'Overview', href: dashboard(), icon: LayoutGrid },
     { title: 'Board', href: board(), icon: KanbanSquare },
-    { title: 'Chat', href: chat(), icon: MessageSquare },
-];
+    {
+        title: 'Chat',
+        href: chat(),
+        icon: MessageSquare,
+        badge: page.props.unreadMessages,
+    },
+]);
 </script>
 
 <template>

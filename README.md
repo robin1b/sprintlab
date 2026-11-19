@@ -11,9 +11,10 @@ The fictional company is **Workkit** (working name): a platform that leases
 laptops and smartphones to employees through their employer, with a Sales and a
 Repairs department.
 
-> Status: early development. Sign-in, the app shell and the GitHub connection
-> (webhook, pull request review by an AI colleague) exist. Sprints, the board
-> and the chat are next.
+> Status: early development. Sign-in, the app shell, the GitHub connection
+> (webhook, pull request review by an AI colleague) and the sprint engine exist:
+> a demo sprint with a board and scripted chat messages is playable. Replies
+> from colleagues and the first full sprint are next.
 
 ## How a review happens
 

@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { usePoll } from '@inertiajs/vue3';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import SprintChip from '@/components/SprintChip.vue';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { BreadcrumbItem } from '@/types';
 
@@ -11,6 +13,9 @@ withDefaults(
         breadcrumbs: () => [],
     },
 );
+
+// Keep the sprint chip and the unread badge fresh on every page.
+usePoll(20_000, { only: ['sprint', 'unreadMessages'] });
 </script>
 
 <template>
@@ -24,10 +29,6 @@ withDefaults(
                 :breadcrumbs="breadcrumbs"
             />
         </div>
-        <span
-            class="rounded-md border border-border px-2 py-0.5 font-mono text-xs text-muted-foreground"
-        >
-            No active sprint
-        </span>
+        <SprintChip />
     </header>
 </template>

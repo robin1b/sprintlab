@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { team } from '@/lib/team';
+import type { Colleague } from '@/types/sprint';
+
+defineProps<{
+    colleagues: Colleague[];
+}>();
 </script>
 
 <template>
     <ul class="divide-y divide-border">
         <li
-            v-for="colleague in team"
-            :key="colleague.name"
+            v-for="colleague in colleagues"
+            :key="colleague.key"
             class="flex items-center gap-3 px-4 py-3"
         >
             <span

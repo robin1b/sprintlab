@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
+import { watch } from 'vue';
+import { toast } from 'vue-sonner';
 import AppContent from '@/components/AppContent.vue';
 import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
@@ -13,6 +16,20 @@ type Props = {
 withDefaults(defineProps<Props>(), {
     breadcrumbs: () => [],
 });
+
+// A refused action (for example "This sprint is not active.") comes back as a
+// flash error. The flash object is new on every response, so the same message
+// shows again when it happens again.
+const page = usePage();
+
+watch(
+    () => page.props.flash,
+    (flash) => {
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    },
+);
 </script>
 
 <template>
