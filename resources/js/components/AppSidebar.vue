@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { KanbanSquare, LayoutGrid, MessageSquare } from '@lucide/vue';
+import { Gauge, KanbanSquare, LayoutGrid, MessageSquare } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -15,6 +15,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { board, chat, dashboard } from '@/routes';
+import { usage } from '@/routes/admin';
 import type { NavItem } from '@/types';
 
 const page = usePage();
@@ -28,6 +29,10 @@ const mainNavItems = computed<NavItem[]>(() => [
         icon: MessageSquare,
         badge: page.props.unreadMessages,
     },
+]);
+
+const adminNavItems = computed<NavItem[]>(() => [
+    { title: 'AI usage', href: usage(), icon: Gauge },
 ]);
 </script>
 
@@ -47,6 +52,12 @@ const mainNavItems = computed<NavItem[]>(() => [
 
         <SidebarContent>
             <NavMain :items="mainNavItems" />
+            <NavMain
+                v-if="page.props.auth.is_admin"
+                :items="adminNavItems"
+                label="admin"
+                class="mt-4"
+            />
         </SidebarContent>
 
         <SidebarFooter>

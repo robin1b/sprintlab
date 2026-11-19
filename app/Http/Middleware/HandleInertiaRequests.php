@@ -48,6 +48,7 @@ class HandleInertiaRequests extends Middleware
                     'github_username' => $request->user()->github_username,
                     'avatar' => $request->user()->avatar_url,
                 ] : null,
+                'is_admin' => $request->user() !== null && $request->user()->can('admin'),
             ],
             'flash' => [
                 'error' => $request->session()->get('error'),

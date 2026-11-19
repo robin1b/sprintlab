@@ -3,11 +3,14 @@
 namespace Tests\Feature\GitHub;
 
 use App\Ai\Agents\PullRequestReviewer;
+use App\Enums\AiFeature;
 use App\Enums\Colleague;
 use App\Enums\ReviewStatus;
 use App\Enums\ReviewVerdict;
 use App\Jobs\ReviewPullRequest;
+use App\Models\AiCall;
 use App\Models\Review;
+use App\Models\User;
 use App\Services\Review\PullRequestReviewService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Factory;
@@ -249,5 +252,45 @@ class PullRequestReviewTest extends TestCase
         PullRequestReviewer::assertPrompted(fn (AgentPrompt $prompt) => $prompt->contains('File: app/Small.php')
             && ! $prompt->contains('File: app/Huge.php')
             && $prompt->contains('The diff was cut off'));
+    }
+
+    public function test_the_review_is_counted_as_an_ai_call_of_the_installation_user(): void
+    {
+        $user = User::factory()->create();
+        $pullRequest = $this->createPullRequest($user);
+        $this->fakeGitHub();
+        $this->fakeReviewer();
+
+        ReviewPullRequest::dispatch($pullRequest->id, $this->sha);
+
+        $review = Review::sole();
+        $call = AiCall::sole();
+
+        $this->assertSame(AiFeature::Review, $call->feature);
+        $this->assertSame($user->id, $call->user_id);
+        $this->assertNull($call->sprint_id);
+        $this->assertNotSame('', $call->model);
+        // The fake decides the model and the (zero) tokens: the call must match what the review stored.
+        $this->assertSame($review->model, $call->model);
+        $this->assertSame($review->input_tokens, $call->input_tokens);
+        $this->assertSame($review->output_tokens, $call->output_tokens);
+    }
+
+    public function test_the_review_is_skipped_without_calling_the_model_when_the_budget_is_reached(): void
+    {
+        config(['sprintlab.ai.monthly_budget_usd' => 1]);
+        AiCall::factory()->create(['cost_micros' => 1_000_000]);
+        $pullRequest = $this->createPullRequest();
+        $this->fakeGitHub();
+        $this->fakeReviewer();
+
+        ReviewPullRequest::dispatch($pullRequest->id, $this->sha);
+
+        $review = Review::sole();
+        $this->assertSame(ReviewStatus::Skipped, $review->status);
+        $this->assertSame('Monthly AI budget reached.', $review->error);
+        PullRequestReviewer::assertNeverPrompted();
+        $this->assertSame(1, AiCall::count());
+        Http::assertNotSent(fn (Request $request) => str_ends_with($request->url(), '/pulls/12/reviews'));
     }
 }

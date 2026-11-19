@@ -3,9 +3,11 @@
 namespace Tests\Feature\Chat;
 
 use App\Ai\Agents\ColleagueChat;
+use App\Enums\AiFeature;
 use App\Enums\Colleague;
 use App\Enums\SprintStatus;
 use App\Jobs\ReplyToChatMessage;
+use App\Models\AiCall;
 use App\Models\Message;
 use App\Services\Chat\ChatService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -268,5 +270,53 @@ class ChatServiceTest extends TestCase
         (new ReplyToChatMessage(999))->handle($this->service());
 
         ColleagueChat::assertNeverPrompted();
+    }
+
+    public function test_an_ai_reply_is_counted_with_the_sprint_and_its_user()
+    {
+        $sprint = $this->startDemoSprint();
+        $message = $this->userMessage($sprint);
+        $this->fakeColleagueWithUsage('Look at the approve method.', 120, 30);
+
+        $this->service()->reply($message);
+
+        $call = AiCall::sole();
+        $this->assertSame(AiFeature::Chat, $call->feature);
+        $this->assertSame('claude-haiku-5-5', $call->model);
+        $this->assertSame(120, $call->input_tokens);
+        $this->assertSame(30, $call->output_tokens);
+        $this->assertSame($sprint->id, $call->sprint_id);
+        $this->assertSame($sprint->user_id, $call->user_id);
+        // 120 x $0.10 + 30 x $0.50 per million tokens = $0.000027
+        $this->assertSame(27, $call->cost_micros);
+        $this->assertTrue($call->priced);
+    }
+
+    public function test_the_scripted_reply_is_not_counted()
+    {
+        config(['sprintlab.ai.chat_replies_per_sprint_per_day' => 1]);
+        $sprint = $this->startDemoSprint();
+        Message::factory()->aiReply()->create(['sprint_id' => $sprint->id, 'colleague' => Colleague::Josh]);
+
+        $this->service()->reply($this->userMessage($sprint));
+
+        $this->assertSame(0, AiCall::count());
+    }
+
+    public function test_a_reached_budget_gives_the_scripted_reply_without_calling_the_ai()
+    {
+        config(['sprintlab.ai.monthly_budget_usd' => 1]);
+        AiCall::factory()->create(['cost_micros' => 1_000_000]);
+        $sprint = $this->startDemoSprint();
+        $message = $this->userMessage($sprint);
+        $this->fakeColleague();
+
+        $reply = $this->service()->reply($message);
+
+        $this->assertSame(ChatService::DAILY_LIMIT_REPLY, $reply->body);
+        $this->assertNull($reply->model);
+        $this->assertNotNull($message->fresh()->answered_at);
+        ColleagueChat::assertNeverPrompted();
+        $this->assertSame(1, AiCall::count());
     }
 }

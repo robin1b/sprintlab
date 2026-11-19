@@ -3,12 +3,15 @@
 namespace App\Services\Review;
 
 use App\Ai\Agents\PullRequestReviewer;
+use App\Enums\AiFeature;
 use App\Enums\Colleague;
 use App\Enums\PullRequestState;
 use App\Enums\ReviewStatus;
 use App\Enums\ReviewVerdict;
 use App\Models\PullRequest;
 use App\Models\Review;
+use App\Services\Ai\Budget;
+use App\Services\Ai\UsageRecorder;
 use App\Services\GitHub\GitHubApp;
 use App\Services\GitHub\InstallationClient;
 use Illuminate\Support\Carbon;
@@ -22,7 +25,11 @@ use Throwable;
  */
 class PullRequestReviewService
 {
-    public function __construct(private readonly GitHubApp $github) {}
+    public function __construct(
+        private readonly GitHubApp $github,
+        private readonly Budget $budget,
+        private readonly UsageRecorder $usage,
+    ) {}
 
     public function review(PullRequest $pullRequest, string $headSha, Colleague $colleague = Colleague::Sarah): ?Review
     {
@@ -55,6 +62,11 @@ class PullRequestReviewService
 
         if ($this->dailyLimitReached($installation->id)) {
             return $this->skip($review, 'Daily review limit reached.');
+        }
+
+        // A saved answer needs no new call, so only a review without one is stopped.
+        if ($review->verdict === null && ! $this->budget->allows()) {
+            return $this->skip($review, 'Monthly AI budget reached.');
         }
 
         try {
@@ -116,6 +128,14 @@ class PullRequestReviewService
             'input_tokens' => $response->usage->inputTokens,
             'output_tokens' => $response->usage->outputTokens,
         ]);
+
+        $this->usage->record(
+            AiFeature::Review,
+            $response->meta->model,
+            $response->usage->inputTokens,
+            $response->usage->outputTokens,
+            $pullRequest->repository->installation->user,
+        );
     }
 
     private function post(InstallationClient $client, Review $review, PullRequest $pullRequest, DiffSummary $diff, Colleague $colleague): void

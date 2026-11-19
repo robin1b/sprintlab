@@ -3,6 +3,7 @@
 namespace App\Services\Review;
 
 use App\Ai\Agents\ReviewAssessor;
+use App\Enums\AiFeature;
 use App\Enums\AssessmentStatus;
 use App\Enums\Colleague;
 use App\Enums\ReviewVerdict;
@@ -11,6 +12,8 @@ use App\Enums\TicketType;
 use App\Models\Message;
 use App\Models\ReviewAssessment;
 use App\Models\Ticket;
+use App\Services\Ai\Budget;
+use App\Services\Ai\UsageRecorder;
 use App\Services\GitHub\GitHubApp;
 use App\Services\Sprint\TicketService;
 use DomainException;
@@ -38,6 +41,8 @@ class UserReviewAssessmentService
     public function __construct(
         private readonly GitHubApp $github,
         private readonly TicketService $tickets,
+        private readonly Budget $budget,
+        private readonly UsageRecorder $usage,
     ) {}
 
     public function assess(Ticket $ticket, int $githubReviewId): ?ReviewAssessment
@@ -85,6 +90,7 @@ class UserReviewAssessmentService
             $skipReason = match (true) {
                 $review['state'] === 'PENDING' => 'The review is not submitted yet.',
                 trim($review['body']) === '' && $comments === [] => 'The review has no text and no comments.',
+                ! $this->budget->allows() => 'Monthly AI budget reached.',
                 default => null,
             };
 
@@ -103,6 +109,15 @@ class UserReviewAssessmentService
                 $this->prompt($planted, $pullRequest->title, $verdict, $review['body'], $comments, $diff),
                 provider: Lab::Anthropic,
                 model: (string) config('sprintlab.ai.review_model'),
+            );
+
+            $this->usage->record(
+                AiFeature::Assessment,
+                $response->meta->model,
+                $response->usage->inputTokens,
+                $response->usage->outputTokens,
+                $ticket->sprint->user,
+                $ticket->sprint,
             );
 
             $issues = $this->cleanIssues($planted, (array) ($response['issues'] ?? []));

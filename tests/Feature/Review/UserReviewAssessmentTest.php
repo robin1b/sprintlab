@@ -3,12 +3,14 @@
 namespace Tests\Feature\Review;
 
 use App\Ai\Agents\ReviewAssessor;
+use App\Enums\AiFeature;
 use App\Enums\AssessmentStatus;
 use App\Enums\Colleague;
 use App\Enums\ReviewVerdict;
 use App\Enums\TicketStatus;
 use App\Enums\TicketType;
 use App\Jobs\AssessUserReview;
+use App\Models\AiCall;
 use App\Models\Message;
 use App\Models\ReviewAssessment;
 use App\Models\Scenario;
@@ -370,5 +372,41 @@ class UserReviewAssessmentTest extends TestCase
         $this->assertStringContainsString('WK-9', $response->getContent());
         $this->assertStringNotContainsString($secret, $response->getContent());
         $this->assertStringNotContainsString('planted', $response->getContent());
+    }
+
+    public function test_the_assessment_is_counted_as_an_ai_call_with_the_sprint_and_its_user(): void
+    {
+        $ticket = $this->createReviewTicket();
+        $this->fakeGitHubReview();
+        ReviewAssessor::fake([$this->assessorAnswer()]);
+
+        $assessment = $this->assess($ticket);
+
+        $call = AiCall::sole();
+        $this->assertSame(AiFeature::Assessment, $call->feature);
+        $this->assertSame($ticket->sprint_id, $call->sprint_id);
+        $this->assertSame($ticket->sprint->user_id, $call->user_id);
+        // The fake decides the model and the (zero) tokens: the call must match what the assessment stored.
+        $this->assertNotSame('', $call->model);
+        $this->assertSame($assessment->model, $call->model);
+        $this->assertSame($assessment->input_tokens, $call->input_tokens);
+        $this->assertSame($assessment->output_tokens, $call->output_tokens);
+    }
+
+    public function test_the_assessment_is_skipped_without_calling_the_model_when_the_budget_is_reached(): void
+    {
+        config(['sprintlab.ai.monthly_budget_usd' => 1]);
+        AiCall::factory()->create(['cost_micros' => 1_000_000]);
+        $ticket = $this->createReviewTicket();
+        $this->fakeGitHubReview();
+        ReviewAssessor::fake([$this->assessorAnswer()]);
+
+        $assessment = $this->assess($ticket);
+
+        $this->assertSame(AssessmentStatus::Skipped, $assessment->status);
+        $this->assertSame('Monthly AI budget reached.', $assessment->error);
+        ReviewAssessor::assertNeverPrompted();
+        $this->assertSame(0, Message::where('ticket_id', $ticket->id)->count());
+        $this->assertSame(1, AiCall::count());
     }
 }

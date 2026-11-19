@@ -3,10 +3,13 @@
 namespace App\Services\Chat;
 
 use App\Ai\Agents\ColleagueChat;
+use App\Enums\AiFeature;
 use App\Enums\Colleague;
 use App\Jobs\ReplyToChatMessage;
 use App\Models\Message;
 use App\Models\Sprint;
+use App\Services\Ai\Budget;
+use App\Services\Ai\UsageRecorder;
 use Illuminate\Support\Carbon;
 use Laravel\Ai\Enums\Lab;
 
@@ -21,6 +24,11 @@ class ChatService
     public const DAILY_LIMIT_REPLY = "I'm in meetings for the rest of the day. Let's pick this up tomorrow.";
 
     public const FAILED_REPLY = 'Sorry, I got pulled into something. Can you ask me again in a bit?';
+
+    public function __construct(
+        private readonly Budget $budget,
+        private readonly UsageRecorder $usage,
+    ) {}
 
     public function send(Sprint $sprint, Colleague $colleague, string $body): Message
     {
@@ -73,7 +81,7 @@ class ChatService
 
         $pendingIds = $pending->pluck('id')->all();
 
-        if ($this->dailyLimitReached($sprint)) {
+        if ($this->dailyLimitReached($sprint) || ! $this->budget->allows()) {
             $reply = $this->store($sprint, $colleague, self::DAILY_LIMIT_REPLY);
             $this->markAnswered($pendingIds);
 
@@ -91,6 +99,15 @@ class ChatService
             'input_tokens' => $response->usage->inputTokens,
             'output_tokens' => $response->usage->outputTokens,
         ]);
+
+        $this->usage->record(
+            AiFeature::Chat,
+            $response->meta->model,
+            $response->usage->inputTokens,
+            $response->usage->outputTokens,
+            $sprint->user,
+            $sprint,
+        );
 
         $this->markAnswered($pendingIds);
 

@@ -11,18 +11,22 @@ import {
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import type { NavItem } from '@/types';
 
-defineProps<{
-    items: NavItem[];
-}>();
+withDefaults(
+    defineProps<{
+        items: NavItem[];
+        label?: string;
+    }>(),
+    { label: 'workspace' },
+);
 
 const { isCurrentOrParentUrl } = useCurrentUrl();
 </script>
 
 <template>
     <SidebarGroup class="px-2 py-0">
-        <SidebarGroupLabel class="font-mono text-xs text-muted-foreground"
-            >workspace</SidebarGroupLabel
-        >
+        <SidebarGroupLabel class="font-mono text-xs text-muted-foreground">{{
+            label
+        }}</SidebarGroupLabel>
         <SidebarMenu>
             <SidebarMenuItem v-for="item in items" :key="item.title">
                 <SidebarMenuButton

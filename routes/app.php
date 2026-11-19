@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UsageController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DashboardController;
@@ -20,4 +21,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('chat/{colleague?}', ChatController::class)->name('chat');
     Route::post('chat/{colleague}/messages', [ChatController::class, 'store'])->name('chat.messages.store');
+
+    Route::get('admin/usage', UsageController::class)->middleware('can:admin')->name('admin.usage');
 });

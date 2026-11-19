@@ -27,11 +27,11 @@ On GitHub: **Settings → Developer settings → GitHub Apps → New GitHub App*
 
 Repository permissions:
 
-| Permission    | Access         | Why                                  |
-| ------------- | -------------- | ------------------------------------ |
-| Pull requests | Read and write | read the changed files, post reviews |
+| Permission    | Access         | Why                                                                                                         |
+| ------------- | -------------- | ----------------------------------------------------------------------------------------------------------- |
+| Pull requests | Read and write | read the changed files, post reviews                                                                        |
 | Contents      | Read and write | read the code of a pull request, and commit a colleague's pull request to a branch in the user's repository |
-| Metadata      | Read-only      | required by GitHub                   |
+| Metadata      | Read-only      | required by GitHub                                                                                          |
 
 Account permissions: **Email addresses: Read-only** (optional, to store the
 user's email at sign-in).
@@ -72,14 +72,14 @@ base64 -w0 sprintlab.private-key.pem      # on macOS: base64 -i sprintlab.privat
 
 ## What happens when
 
-| GitHub event                                                   | Sprintlab does                                                                                 |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `installation` created                                         | stores the installation and its repositories, links it to the user with that GitHub account    |
-| `installation` deleted                                         | removes the installation and everything under it                                               |
-| `installation_repositories`                                    | adds or removes repositories                                                                   |
-| `pull_request` opened, reopened, synchronize, ready_for_review | stores the pull request and queues a review (not for drafts or pull requests opened by a bot)  |
-| `pull_request` closed                                          | records closed or merged                                                                       |
-| `pull_request_review` submitted                                | queues the assessment of the user's review of a colleague's pull request (not for bot reviews) |
+| GitHub event                                                   | Sprintlab does                                                                                                                                                                                                                                                                              |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `installation` created                                         | stores the installation and its repositories, links it to the user with that GitHub account                                                                                                                                                                                                 |
+| `installation` deleted                                         | removes the installation and everything under it                                                                                                                                                                                                                                            |
+| `installation_repositories`                                    | adds or removes repositories                                                                                                                                                                                                                                                                |
+| `pull_request` opened, reopened, synchronize, ready_for_review | stores the pull request and queues a review (not for drafts or pull requests opened by a bot)                                                                                                                                                                                               |
+| `pull_request` closed                                          | records closed or merged                                                                                                                                                                                                                                                                    |
+| `pull_request_review` submitted                                | queues the assessment of the user's review of a colleague's pull request (not for bot reviews)                                                                                                                                                                                              |
 | (no event: a scenario event `open_pull_request` fires)         | queues a job that commits the colleague's files to a new branch and opens the pull request; the webhook that follows links it to the ticket without a review by Sarah, because the author is a bot. Without a connected repository the job is queued again every minute by `sprintlab:tick` |
 
 Every call is stored in `webhook_deliveries` first. A job processes it, so
