@@ -13,3 +13,9 @@ Artisan::command('inspire', function () {
 Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=2')
     ->everyMinute()
     ->withoutOverlapping(5);
+
+// Scenario events with a delay (a colleague writes ten minutes later) are
+// fired by the scheduler, because nothing else runs between requests.
+Schedule::command('sprintlab:tick')
+    ->everyMinute()
+    ->withoutOverlapping(5);

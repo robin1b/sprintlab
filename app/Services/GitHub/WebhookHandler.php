@@ -9,6 +9,7 @@ use App\Models\PullRequest;
 use App\Models\Repository;
 use App\Models\User;
 use App\Models\WebhookDelivery;
+use App\Services\Sprint\PullRequestTicketLinker;
 use Illuminate\Support\Carbon;
 
 /**
@@ -22,6 +23,8 @@ class WebhookHandler
 {
     // Only these pull request actions mean "there is new code to look at".
     private const REVIEWABLE_ACTIONS = ['opened', 'reopened', 'synchronize', 'ready_for_review'];
+
+    public function __construct(private readonly PullRequestTicketLinker $linker) {}
 
     public function handle(WebhookDelivery $delivery): void
     {
@@ -128,6 +131,8 @@ class WebhookHandler
                 'draft' => (bool) data_get($payload, 'pull_request.draft'),
             ],
         );
+
+        $this->linker->link($pullRequest, $action);
 
         $writtenByBot = data_get($payload, 'pull_request.user.type') === 'Bot';
 

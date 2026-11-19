@@ -25,4 +25,20 @@ return [
         'max_inline_comments' => 8,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Scenario files
+    |--------------------------------------------------------------------------
+    |
+    | Folders with scenario JSON files (see `sprintlab:import-scenarios`). The
+    | repository is public, so it only ships a demo. Real scenarios, with the
+    | answers in them, live in the private second folder on the server.
+    |
+    */
+
+    'scenario_paths' => [
+        resource_path('scenarios'),
+        env('SPRINTLAB_SCENARIO_PATH') ?: storage_path('app/private/scenarios'),
+    ],
+
 ];
