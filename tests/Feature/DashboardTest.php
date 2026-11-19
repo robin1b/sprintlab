@@ -4,14 +4,17 @@ namespace Tests\Feature;
 
 use App\Models\Message;
 use App\Models\Sprint;
+use App\Models\SprintEvaluation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\Support\EvaluationFixtures;
 use Tests\Support\SprintFixtures;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
 {
+    use EvaluationFixtures;
     use RefreshDatabase;
     use SprintFixtures;
 
@@ -132,5 +135,66 @@ class DashboardTest extends TestCase
         $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
             ->where('sprint.status', 'paused')
             ->where('sprint.is_overdue', false));
+    }
+
+    public function test_a_completed_sprint_without_an_evaluation_reports_none_yet()
+    {
+        $sprint = $this->completedSprint();
+        $this->actingAs($sprint->user);
+
+        $this->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page->where('completed.evaluation', null));
+    }
+
+    public function test_the_completed_sprint_reports_the_state_of_its_evaluation()
+    {
+        $sprint = $this->completedSprint();
+        $this->actingAs($sprint->user);
+        $url = route('sprints.evaluation.show', $sprint, false);
+
+        $evaluation = SprintEvaluation::factory()->create(['sprint_id' => $sprint->id]);
+        $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+            ->where('completed.evaluation', ['status' => 'preparing', 'overall' => null, 'passed' => null, 'url' => $url]));
+
+        $evaluation->update(['status' => 'awaiting_answers']);
+        $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+            ->where('completed.evaluation.status', 'awaiting_answers'));
+
+        $evaluation->update(['status' => 'writing']);
+        $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+            ->where('completed.evaluation.status', 'writing'));
+
+        $evaluation->update(['status' => 'completed', 'overall' => 82, 'passed' => true]);
+        $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+            ->where('completed.evaluation', ['status' => 'completed', 'overall' => 82, 'passed' => true, 'url' => $url]));
+    }
+
+    public function test_the_progress_is_passed_in_every_state()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+            ->where('progress', ['level' => 'Junior', 'passed' => 0, 'needed' => 3, 'next' => 'Medior']));
+
+        SprintEvaluation::factory()->completed()->create(['sprint_id' => $this->completedSprint($user)->id]);
+
+        $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+            ->where('progress.passed', 1));
+
+        $this->startDemoSprint($user);
+
+        $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+            ->where('progress.passed', 1)
+            ->where('progress.next', 'Medior'));
+    }
+
+    public function test_the_shared_user_has_a_level()
+    {
+        $this->actingAs(User::factory()->create(['level' => 'medior']));
+
+        $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+            ->where('auth.user.level', 'medior')
+            ->where('auth.user.level_label', 'Medior'));
     }
 }

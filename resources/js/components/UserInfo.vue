@@ -5,7 +5,7 @@ import { useInitials } from '@/composables/useInitials';
 import type { User } from '@/types';
 
 const props = defineProps<{
-    user: Pick<User, 'name' | 'avatar'>;
+    user: Pick<User, 'name' | 'avatar'> & Partial<Pick<User, 'level_label'>>;
 }>();
 
 const { getInitials } = useInitials();
@@ -27,6 +27,15 @@ const showAvatar = computed(
     </Avatar>
 
     <div class="grid flex-1 text-left text-sm leading-tight">
-        <span class="truncate font-medium">{{ user.name }}</span>
+        <span class="flex items-center gap-2">
+            <span class="truncate font-medium">{{ user.name }}</span>
+            <span
+                v-if="user.level_label"
+                class="shrink-0 rounded-sm border border-border px-1.5 font-mono text-xs text-muted-foreground"
+                data-test="level-chip"
+            >
+                {{ user.level_label }}
+            </span>
+        </span>
     </div>
 </template>

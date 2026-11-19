@@ -16,4 +16,9 @@ class SprintPolicy
     {
         return $sprint->user_id === $user->id;
     }
+
+    public function evaluate(User $user, Sprint $sprint): bool
+    {
+        return $sprint->user_id === $user->id;
+    }
 }

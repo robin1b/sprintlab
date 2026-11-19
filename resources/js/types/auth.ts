@@ -4,6 +4,8 @@ export type User = {
     email: string | null;
     github_username: string;
     avatar?: string;
+    level: string;
+    level_label: string;
     [key: string]: unknown;
 };
 

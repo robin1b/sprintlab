@@ -7,6 +7,8 @@ use App\Enums\SprintStatus;
 use App\Enums\TicketStatus;
 use App\Models\Scenario;
 use App\Models\Sprint;
+use App\Models\SprintEvaluation;
+use App\Services\Evaluation\SprintEvaluationService;
 use App\Services\Sprint\SprintService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -15,7 +17,10 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __construct(private readonly SprintService $sprints) {}
+    public function __construct(
+        private readonly SprintService $sprints,
+        private readonly SprintEvaluationService $evaluations,
+    ) {}
 
     public function __invoke(Request $request): Response
     {
@@ -33,6 +38,7 @@ class DashboardController extends Controller
                 $completed = [
                     'scenario_title' => $last->scenario->title,
                     'completed_at' => $last->completed_at?->toIso8601String(),
+                    'evaluation' => $this->evaluationState($last),
                 ];
             }
         }
@@ -46,6 +52,7 @@ class DashboardController extends Controller
                 'duration_days' => $scenario->duration_days,
             ],
             'completed' => $completed,
+            'progress' => $this->evaluations->progressFor($user),
             'overview' => $sprint === null ? null : $this->overview($sprint),
             'team' => collect(Colleague::cases())->map(fn (Colleague $colleague) => [
                 'key' => $colleague->value,
@@ -53,6 +60,25 @@ class DashboardController extends Controller
                 'role' => $colleague->role(),
             ])->all(),
         ]);
+    }
+
+    /**
+     * @return array{status: string, overall: int|null, passed: bool|null, url: string}|null
+     */
+    private function evaluationState(Sprint $sprint): ?array
+    {
+        $evaluation = SprintEvaluation::query()->where('sprint_id', $sprint->id)->first();
+
+        if ($evaluation === null) {
+            return null;
+        }
+
+        return [
+            'status' => $evaluation->status->value,
+            'overall' => $evaluation->overall,
+            'passed' => $evaluation->passed,
+            'url' => route('sprints.evaluation.show', $sprint, false),
+        ];
     }
 
     /**

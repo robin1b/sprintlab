@@ -13,7 +13,7 @@ import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 
 type Props = {
-    user: Pick<User, 'name' | 'avatar'>;
+    user: Pick<User, 'name' | 'avatar' | 'level_label'>;
 };
 
 const handleLogout = () => {

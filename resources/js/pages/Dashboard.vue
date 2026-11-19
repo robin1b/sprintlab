@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage, usePoll } from '@inertiajs/vue3';
 import { Check } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import ColleagueList from '@/components/ColleagueList.vue';
+import EvaluationCard from '@/components/evaluation/EvaluationCard.vue';
+import LevelProgress from '@/components/evaluation/LevelProgress.vue';
 import StatusChip from '@/components/StatusChip.vue';
 import { Button } from '@/components/ui/button';
 import { useNow } from '@/composables/useNow';
 import { deadlineInWords, formatMessageTime } from '@/lib/time';
 import { board, chat, dashboard } from '@/routes';
 import { pause, resume, store } from '@/routes/sprints';
+import type { EvaluationState, LevelProgressData } from '@/types/evaluation';
 import type {
     Colleague,
     ScenarioOffer,
@@ -24,12 +27,34 @@ defineOptions({
 
 const props = defineProps<{
     scenario: ScenarioOffer | null;
-    completed: { scenario_title: string; completed_at: string | null } | null;
+    completed: {
+        scenario_title: string;
+        completed_at: string | null;
+        evaluation: EvaluationState | null;
+    } | null;
+    progress: LevelProgressData;
     overview: SprintOverview | null;
     team: Colleague[];
 }>();
 
 const page = usePage();
+
+// Follow the evaluation until it is done; the card shows what Sarah is doing.
+const { start, stop } = usePoll(
+    10_000,
+    { only: ['completed', 'progress'] },
+    { autoStart: false },
+);
+const evaluationPending = computed(
+    () =>
+        props.completed !== null &&
+        props.completed.evaluation?.status !== 'completed',
+);
+
+watch(evaluationPending, (value) => (value ? start() : stop()), {
+    immediate: true,
+});
+
 const now = useNow(60_000);
 
 const firstName = computed(
@@ -110,7 +135,13 @@ const statusLabels = computed(() => {
                     going.
                 </template>
             </p>
+            <LevelProgress :progress="progress" class="mt-2" />
         </div>
+
+        <EvaluationCard
+            v-if="sprint === null && completed"
+            :evaluation="completed.evaluation"
+        />
 
         <template v-if="sprint !== null && overview !== null">
             <section class="rounded-md border border-border bg-card">
