@@ -7,6 +7,7 @@ use App\Enums\SprintStatus;
 use App\Enums\TicketStatus;
 use App\Jobs\ReplyToChatMessage;
 use App\Models\Message;
+use App\Models\Repository;
 use App\Models\Scenario;
 use App\Models\Sprint;
 use App\Models\User;
@@ -35,6 +36,7 @@ class SprintService
             $sprint = Sprint::create([
                 'user_id' => $user->id,
                 'scenario_id' => $scenario->id,
+                'repository_id' => $this->connectedRepositoryOf($user)?->id,
                 'status' => SprintStatus::Active,
                 'current_day' => 1,
                 'started_at' => Carbon::now(),
@@ -122,6 +124,37 @@ class SprintService
             ->get()
             ->unique(fn (Message $message): string => $message->colleague->value)
             ->each(fn (Message $message) => ReplyToChatMessage::dispatch($message->id));
+    }
+
+    /**
+     * The repository where colleagues open their pull requests: the one linked
+     * to the sprint or, when GitHub was connected after the sprint started,
+     * the user's newest one (which is then linked).
+     */
+    public function repositoryFor(Sprint $sprint): ?Repository
+    {
+        if ($sprint->repository_id !== null) {
+            return $sprint->repository;
+        }
+
+        $repository = $this->connectedRepositoryOf($sprint->user);
+
+        if ($repository !== null) {
+            $sprint->update(['repository_id' => $repository->id]);
+            $sprint->setRelation('repository', $repository);
+        }
+
+        return $repository;
+    }
+
+    private function connectedRepositoryOf(User $user): ?Repository
+    {
+        return Repository::query()
+            ->whereHas('installation', function ($installations) use ($user): void {
+                $installations->where('user_id', $user->id)->whereNull('suspended_at');
+            })
+            ->latest('id')
+            ->first();
     }
 
     public function currentFor(User $user): ?Sprint

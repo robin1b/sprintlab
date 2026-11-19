@@ -3,7 +3,8 @@
 One GitHub App does three jobs for Sprintlab:
 
 - **Sign-in**: users log in with their GitHub account.
-- **API access**: Sprintlab reads the diff of a pull request and posts a review.
+- **API access**: Sprintlab reads the diff of a pull request, posts a review, and opens the
+  pull requests of the AI colleagues (a branch, a commit and the pull request) in the user's repository.
 - **Webhooks**: GitHub tells Sprintlab when a pull request is opened or updated.
 
 The app needs a public address for the webhook, so register it once the site is
@@ -29,7 +30,7 @@ Repository permissions:
 | Permission    | Access         | Why                                  |
 | ------------- | -------------- | ------------------------------------ |
 | Pull requests | Read and write | read the changed files, post reviews |
-| Contents      | Read-only      | read the code of a pull request      |
+| Contents      | Read and write | read the code of a pull request, and commit a colleague's pull request to a branch in the user's repository |
 | Metadata      | Read-only      | required by GitHub                   |
 
 Account permissions: **Email addresses: Read-only** (optional, to store the
@@ -79,6 +80,7 @@ base64 -w0 sprintlab.private-key.pem      # on macOS: base64 -i sprintlab.privat
 | `pull_request` opened, reopened, synchronize, ready_for_review | stores the pull request and queues a review (not for drafts or pull requests opened by a bot)  |
 | `pull_request` closed                                          | records closed or merged                                                                       |
 | `pull_request_review` submitted                                | queues the assessment of the user's review of a colleague's pull request (not for bot reviews) |
+| (no event: a scenario event `open_pull_request` fires)         | queues a job that commits the colleague's files to a new branch and opens the pull request; the webhook that follows links it to the ticket without a review by Sarah, because the author is a bot. Without a connected repository the job is queued again every minute by `sprintlab:tick` |
 
 Every call is stored in `webhook_deliveries` first. A job processes it, so
 GitHub always gets a fast answer and a call that arrives twice is handled once.

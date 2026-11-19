@@ -22,6 +22,7 @@ class SprintFactory extends Factory
         return [
             'user_id' => User::factory(),
             'scenario_id' => Scenario::factory(),
+            'repository_id' => null,
             'status' => SprintStatus::Active,
             'current_day' => 1,
             'started_at' => Carbon::now(),

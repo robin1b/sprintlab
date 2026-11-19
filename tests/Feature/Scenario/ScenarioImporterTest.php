@@ -377,4 +377,150 @@ class ScenarioImporterTest extends TestCase
 
         $this->assertImportFails($data, "only a ticket of type 'review'");
     }
+
+    /**
+     * A scenario with a review ticket WK-4 and an event that opens its pull request.
+     *
+     * @param  array<string, mixed>  $event  values that override the event
+     * @param  array<string, mixed>  $ticket  values that override the ticket
+     * @return array<string, mixed>
+     */
+    private function pullRequestScenario(array $event = [], array $ticket = []): array
+    {
+        $data = $this->scenarioData();
+        $data['tickets'][] = array_replace([
+            'key' => 'WK-4', 'day' => 1, 'type' => 'review', 'reporter' => 'josh',
+            'title' => 'Review', 'description' => 'Describe.', 'acceptance_criteria' => [],
+        ], $ticket);
+        $data['events'][] = array_replace([
+            'key' => 'josh-pr', 'on' => 'day_started', 'ticket' => 'WK-4', 'action' => 'open_pull_request',
+            'colleague' => 'josh', 'branch' => 'wk-4-repair-intake', 'title' => 'WK-4: repair intake',
+            'description' => 'Adds the intake.', 'files' => [['path' => 'app/A.php', 'content' => '<?php']],
+        ], $event);
+
+        return $data;
+    }
+
+    public function test_an_open_pull_request_event_is_stored_with_its_files(): void
+    {
+        $data = $this->pullRequestScenario(['commit_message' => 'Add intake', 'body' => 'Please review.']);
+
+        app(ScenarioImporter::class)->importFile($this->write($data));
+
+        $event = ScenarioEvent::where('key', 'josh-pr')->sole();
+        $this->assertSame(ScenarioAction::OpenPullRequest, $event->action);
+        $this->assertSame(Colleague::Josh, $event->colleague);
+        $this->assertSame('wk-4-repair-intake', $event->payload['branch']);
+        $this->assertSame('Add intake', $event->payload['commit_message']);
+        $this->assertSame([['path' => 'app/A.php', 'content' => '<?php']], $event->payload['files']);
+    }
+
+    public function test_a_from_file_is_read_into_the_content(): void
+    {
+        mkdir($this->directory.'/wk-4');
+        file_put_contents($this->directory.'/wk-4/RepairController.php', "<?php\n// planted\n");
+        $data = $this->pullRequestScenario(['files' => [['path' => 'app/Http/Controllers/RepairController.php', 'from' => 'wk-4/RepairController.php']]]);
+
+        app(ScenarioImporter::class)->importFile($this->write($data));
+
+        $this->assertSame(
+            [['path' => 'app/Http/Controllers/RepairController.php', 'content' => "<?php\n// planted\n"]],
+            ScenarioEvent::where('key', 'josh-pr')->sole()->payload['files'],
+        );
+
+        unlink($this->directory.'/wk-4/RepairController.php');
+        rmdir($this->directory.'/wk-4');
+    }
+
+    public function test_a_from_file_outside_the_scenario_directory_is_refused(): void
+    {
+        $outside = dirname($this->directory).'/sprintlab-outside-'.bin2hex(random_bytes(4)).'.php';
+        file_put_contents($outside, 'secret');
+
+        try {
+            $this->assertImportFails(
+                $this->pullRequestScenario(['files' => [['path' => 'a.php', 'from' => '../'.basename($outside)]]]),
+                'must be inside the scenario directory',
+            );
+        } finally {
+            unlink($outside);
+        }
+    }
+
+    public function test_a_missing_from_file_is_refused(): void
+    {
+        $this->assertImportFails(
+            $this->pullRequestScenario(['files' => [['path' => 'a.php', 'from' => 'nope.php']]]),
+            "'from' file 'nope.php' does not exist",
+        );
+    }
+
+    public function test_a_file_needs_content_or_from(): void
+    {
+        $this->assertImportFails($this->pullRequestScenario(['files' => [['path' => 'a.php']]]), "either 'content' or 'from'");
+        $this->assertImportFails($this->pullRequestScenario(['files' => [['path' => 'a.php', 'content' => 'x', 'from' => 'x.php']]]), "either 'content' or 'from'");
+    }
+
+    public function test_the_required_pull_request_fields_are_checked(): void
+    {
+        foreach (['branch', 'title', 'description', 'files', 'colleague'] as $field) {
+            $data = $this->pullRequestScenario();
+            unset($data['events'][1][$field]);
+
+            $this->assertImportFails($data, "'{$field}'");
+        }
+    }
+
+    public function test_the_ticket_of_a_pull_request_must_be_a_review_ticket(): void
+    {
+        $this->assertImportFails($this->pullRequestScenario(['ticket' => 'WK-1', 'branch' => 'wk-1-fix']), "needs a ticket of type 'review'");
+
+        $data = $this->pullRequestScenario();
+        unset($data['events'][1]['ticket']);
+        $this->assertImportFails($data, "needs a 'ticket'");
+    }
+
+    public function test_the_branch_must_contain_the_ticket_key(): void
+    {
+        $this->assertImportFails($this->pullRequestScenario(['branch' => 'repair-intake']), 'must contain the ticket key WK-4');
+        $this->assertImportFails($this->pullRequestScenario(['branch' => 'wk-40-repair']), 'must contain the ticket key WK-4');
+        $this->assertImportFails($this->pullRequestScenario(['branch' => 'wk-4 repair']), 'not a valid branch name');
+
+        app(ScenarioImporter::class)->importFile($this->write($this->pullRequestScenario(['branch' => 'feature/WK-4-intake'])));
+        $this->assertSame(1, ScenarioEvent::where('key', 'josh-pr')->count());
+    }
+
+    public function test_the_files_must_be_a_non_empty_list_of_at_most_twenty(): void
+    {
+        $this->assertImportFails($this->pullRequestScenario(['files' => []]), "'files' must be a list with at least one file");
+
+        $files = array_map(fn (int $i): array => ['path' => "f{$i}.php", 'content' => 'x'], range(1, 21));
+        $this->assertImportFails($this->pullRequestScenario(['files' => $files]), 'more than 20 files');
+    }
+
+    public function test_unsafe_paths_are_refused(): void
+    {
+        foreach (['/etc/passwd', '../x.php', 'app/../x.php', '.git/config', '.GIT/hooks/x', 'app//x.php', 'app\\x.php'] as $path) {
+            $this->assertImportFails($this->pullRequestScenario(['files' => [['path' => $path, 'content' => 'x']]]), "'path'");
+        }
+    }
+
+    public function test_a_file_larger_than_100_kb_is_refused(): void
+    {
+        $this->assertImportFails(
+            $this->pullRequestScenario(['files' => [['path' => 'big.php', 'content' => str_repeat('a', 100 * 1024 + 1)]]]),
+            'larger than 100 KB',
+        );
+
+        app(ScenarioImporter::class)->importFile($this->write($this->pullRequestScenario(['files' => [['path' => 'ok.php', 'content' => str_repeat('a', 100 * 1024)]]])));
+        $this->assertSame(1, ScenarioEvent::where('key', 'josh-pr')->count());
+    }
+
+    public function test_a_duplicate_path_is_refused(): void
+    {
+        $this->assertImportFails(
+            $this->pullRequestScenario(['files' => [['path' => 'a.php', 'content' => 'x'], ['path' => 'a.php', 'content' => 'y']]]),
+            "duplicate path 'a.php'",
+        );
+    }
 }

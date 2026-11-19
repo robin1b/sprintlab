@@ -23,6 +23,10 @@ class ScenarioImporter
 
     private const SEVERITIES = ['low', 'medium', 'high'];
 
+    private const MAX_PULL_REQUEST_FILES = 20;
+
+    private const MAX_FILE_BYTES = 100 * 1024;
+
     // Event fields that have their own column. Everything else goes in `payload`.
     private const EVENT_COLUMNS = ['key', 'on', 'ticket', 'day', 'delay_minutes', 'action', 'colleague'];
 
@@ -45,7 +49,7 @@ class ScenarioImporter
         }
 
         // Validate everything first, so a broken file never leaves half a scenario behind.
-        $scenario = $this->validate($data, $name);
+        $scenario = $this->validate($data, $name, dirname($path));
 
         return DB::transaction(fn (): Scenario => $this->store($scenario));
     }
@@ -91,7 +95,7 @@ class ScenarioImporter
      * @param  array<array-key, mixed>  $data
      * @return array{slug: string, title: string, level: string, summary: string|null, duration_days: int, tickets: list<array<string, mixed>>, events: list<array<string, mixed>>}
      */
-    private function validate(array $data, string $file): array
+    private function validate(array $data, string $file, string $directory): array
     {
         $slug = $this->requireString($data, 'slug', "scenario in {$file}");
         $where = "scenario '{$slug}' in {$file}";
@@ -122,16 +126,18 @@ class ScenarioImporter
 
         $tickets = [];
         $ticketKeys = [];
+        $ticketTypes = [];
 
         foreach ($data['tickets'] as $index => $ticket) {
-            $tickets[] = $this->validateTicket($ticket, $index, $duration, $ticketKeys, $where);
+            $tickets[] = $validated = $this->validateTicket($ticket, $index, $duration, $ticketKeys, $where);
+            $ticketTypes[$validated['key']] = $validated['type'];
         }
 
         $eventList = [];
         $eventKeys = [];
 
         foreach ($events as $index => $event) {
-            $eventList[] = $this->validateEvent($event, $index, $duration, $ticketKeys, $eventKeys, $where);
+            $eventList[] = $this->validateEvent($event, $index, $duration, $ticketKeys, $ticketTypes, $eventKeys, $where, $directory);
         }
 
         return [
@@ -266,10 +272,11 @@ class ScenarioImporter
 
     /**
      * @param  list<string>  $ticketKeys
+     * @param  array<string, string>  $ticketTypes  ticket key => type
      * @param  list<string>  $seenKeys  filled by this method, to find duplicates
      * @return array<string, mixed>
      */
-    private function validateEvent(mixed $event, int $index, int $duration, array $ticketKeys, array &$seenKeys, string $where): array
+    private function validateEvent(mixed $event, int $index, int $duration, array $ticketKeys, array $ticketTypes, array &$seenKeys, string $where, string $directory): array
     {
         $position = 'event #'.($index + 1);
 
@@ -349,6 +356,14 @@ class ScenarioImporter
             }
         }
 
+        if ($action === ScenarioAction::OpenPullRequest) {
+            if ($colleague === null) {
+                throw $this->error($where, "action 'open_pull_request' needs a 'colleague' (the author)");
+            }
+
+            $payload = $this->validatePullRequest($payload, (string) $ticket, $ticketTypes[(string) $ticket] ?? '', $where, $directory);
+        }
+
         return [
             'key' => $key,
             'trigger' => $on,
@@ -359,6 +374,133 @@ class ScenarioImporter
             'colleague' => $colleague,
             'payload' => $payload,
         ];
+    }
+
+    /**
+     * A colleague's pull request. The file contents are read now, so the running app never needs the files.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function validatePullRequest(array $payload, string $ticketKey, string $ticketType, string $where, string $directory): array
+    {
+        if ($ticketType !== TicketType::Review->value) {
+            throw $this->error($where, "action 'open_pull_request' needs a ticket of type 'review', but {$ticketKey} is '{$ticketType}'");
+        }
+
+        $branch = $this->requireString($payload, 'branch', $where);
+        if (preg_match('/^[A-Za-z0-9._\/-]+$/', $branch) !== 1 || str_contains($branch, '..') || str_starts_with($branch, '/') || str_ends_with($branch, '/')) {
+            throw $this->error($where, "'branch' '{$branch}' is not a valid branch name");
+        }
+
+        // The same rule the pull request linker uses, so the pull request finds its ticket.
+        if (preg_match('/(?<![A-Za-z0-9])'.preg_quote($ticketKey, '/').'(?![0-9])/i', $branch) !== 1) {
+            throw $this->error($where, "'branch' must contain the ticket key {$ticketKey}, so the pull request is linked to the ticket");
+        }
+
+        $this->requireString($payload, 'title', $where);
+        $this->requireString($payload, 'description', $where);
+
+        $commitMessage = $payload['commit_message'] ?? null;
+        if ($commitMessage !== null && (! is_string($commitMessage) || trim($commitMessage) === '')) {
+            throw $this->error($where, "'commit_message' must be text");
+        }
+
+        $files = $payload['files'] ?? null;
+        if (! is_array($files) || ! array_is_list($files) || $files === []) {
+            throw $this->error($where, "'files' must be a list with at least one file");
+        }
+        if (count($files) > self::MAX_PULL_REQUEST_FILES) {
+            throw $this->error($where, "'files' has more than ".self::MAX_PULL_REQUEST_FILES.' files');
+        }
+
+        $root = realpath($directory);
+        $stored = [];
+        $paths = [];
+
+        foreach ($files as $index => $file) {
+            $position = "{$where}, file #".($index + 1);
+
+            if (! is_array($file)) {
+                throw $this->error($where, 'file #'.($index + 1).' must be an object');
+            }
+
+            $path = $this->requireString($file, 'path', $position);
+            if (! $this->isSafePath($path)) {
+                throw $this->error($position, "'path' '{$path}' must be a relative path without '..' and not inside .git");
+            }
+            if (in_array($path, $paths, true)) {
+                throw $this->error($position, "duplicate path '{$path}'");
+            }
+            $paths[] = $path;
+
+            $hasContent = array_key_exists('content', $file);
+            $hasFrom = array_key_exists('from', $file);
+            if ($hasContent === $hasFrom) {
+                throw $this->error($position, "needs either 'content' or 'from', not both");
+            }
+
+            if ($hasFrom) {
+                $content = $this->readSourceFile($file['from'], $root, $position);
+            } else {
+                $content = $file['content'];
+                if (! is_string($content)) {
+                    throw $this->error($position, "'content' must be text");
+                }
+            }
+
+            if (strlen($content) > self::MAX_FILE_BYTES) {
+                throw $this->error($position, 'the file is larger than '.(self::MAX_FILE_BYTES / 1024).' KB');
+            }
+
+            $stored[] = ['path' => $path, 'content' => $content];
+        }
+
+        $payload['files'] = $stored;
+
+        return $payload;
+    }
+
+    private function isSafePath(string $path): bool
+    {
+        if ($path === '' || str_contains($path, "\0") || str_contains($path, '\\') || str_starts_with($path, '/')) {
+            return false;
+        }
+
+        foreach (explode('/', $path) as $position => $segment) {
+            if ($segment === '' || $segment === '.' || $segment === '..') {
+                return false;
+            }
+
+            if ($position === 0 && strtolower($segment) === '.git') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The text of a `from` file. It must stay inside the scenario directory.
+     */
+    private function readSourceFile(mixed $from, string|false $root, string $where): string
+    {
+        if (! is_string($from) || trim($from) === '') {
+            throw $this->error($where, "'from' must be a file path");
+        }
+
+        $full = $root === false ? false : realpath($root.DIRECTORY_SEPARATOR.$from);
+
+        if ($full === false || ! is_file($full)) {
+            throw $this->error($where, "'from' file '{$from}' does not exist");
+        }
+
+        // realpath resolves '..' and symlinks, so this catches every way out of the directory.
+        if (! str_starts_with($full, $root.DIRECTORY_SEPARATOR)) {
+            throw $this->error($where, "'from' file '{$from}' must be inside the scenario directory");
+        }
+
+        return (string) file_get_contents($full);
     }
 
     /**

@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $user_id
  * @property int $scenario_id
+ * @property int|null $repository_id
  * @property SprintStatus $status
  * @property int $current_day
  * @property Carbon $started_at
@@ -25,8 +26,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $completed_at
  * @property-read User $user
  * @property-read Scenario $scenario
+ * @property-read Repository|null $repository
  */
-#[Fillable(['user_id', 'scenario_id', 'status', 'current_day', 'started_at', 'deadline_at', 'paused_at', 'completed_at'])]
+#[Fillable(['user_id', 'scenario_id', 'repository_id', 'status', 'current_day', 'started_at', 'deadline_at', 'paused_at', 'completed_at'])]
 class Sprint extends Model
 {
     /** @use HasFactory<SprintFactory> */
@@ -61,6 +63,14 @@ class Sprint extends Model
     public function scenario(): BelongsTo
     {
         return $this->belongsTo(Scenario::class);
+    }
+
+    /**
+     * @return BelongsTo<Repository, $this>
+     */
+    public function repository(): BelongsTo
+    {
+        return $this->belongsTo(Repository::class);
     }
 
     /**

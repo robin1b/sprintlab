@@ -5,12 +5,15 @@ namespace App\Services\Scenario;
 use App\Enums\ScenarioAction;
 use App\Enums\ScenarioTrigger;
 use App\Enums\SprintStatus;
+use App\Enums\TicketStatus;
+use App\Jobs\OpenColleaguePullRequest;
 use App\Models\Message;
 use App\Models\ScenarioEvent;
 use App\Models\Sprint;
 use App\Models\SprintEvent;
 use App\Models\Ticket;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -103,6 +106,36 @@ class ScenarioEngine
     }
 
     /**
+     * Queue the pull request job again for every fired `open_pull_request`
+     * event whose ticket still has no pull request: GitHub was not connected
+     * yet, or the first try failed. The job is safe to run twice.
+     *
+     * @return int the number of jobs queued
+     */
+    public function retryPullRequests(): int
+    {
+        $rows = DB::table('sprint_events')
+            ->join('scenario_events', 'scenario_events.id', '=', 'sprint_events.scenario_event_id')
+            ->join('sprints', 'sprints.id', '=', 'sprint_events.sprint_id')
+            ->join('tickets', function (JoinClause $join): void {
+                $join->on('tickets.sprint_id', '=', 'sprint_events.sprint_id')
+                    ->on('tickets.key', '=', 'scenario_events.ticket_key');
+            })
+            ->whereNotNull('sprint_events.fired_at')
+            ->where('scenario_events.action', ScenarioAction::OpenPullRequest->value)
+            ->where('sprints.status', SprintStatus::Active->value)
+            ->whereNull('tickets.pull_request_id')
+            ->where('tickets.status', '!=', TicketStatus::Done->value)
+            ->get(['tickets.id as ticket_id', 'scenario_events.id as event_id']);
+
+        foreach ($rows as $row) {
+            OpenColleaguePullRequest::dispatch((int) $row->ticket_id, (int) $row->event_id);
+        }
+
+        return $rows->count();
+    }
+
+    /**
      * Ticket-specific events only match their ticket. That only makes sense
      * for ticket triggers: on other triggers `ticket_key` just says which
      * ticket the event is about (the one to release, update or talk about).
@@ -139,6 +172,16 @@ class ScenarioEngine
             case ScenarioAction::UpdateTicket:
                 if ($ticket !== null) {
                     $this->updateTicket($ticket, $event);
+                }
+                break;
+
+            case ScenarioAction::OpenPullRequest:
+                if ($ticket !== null) {
+                    if (! $ticket->isReleased()) {
+                        $ticket->update(['released_at' => Carbon::now()]);
+                    }
+
+                    OpenColleaguePullRequest::dispatch($ticket->id, $event->id);
                 }
                 break;
         }

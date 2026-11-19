@@ -149,6 +149,134 @@ class InstallationClient
             ->throw();
     }
 
+    /**
+     * @return array{default_branch: string}
+     */
+    public function repository(string $repository): array
+    {
+        $response = $this->request()
+            ->get("{$this->apiUrl}/repos/{$repository}")
+            ->throw();
+
+        return ['default_branch' => (string) $response->json('default_branch')];
+    }
+
+    /**
+     * The commit a branch points at, or null when the branch does not exist.
+     */
+    public function branchSha(string $repository, string $branch): ?string
+    {
+        $response = $this->request()
+            ->get("{$this->apiUrl}/repos/{$repository}/git/ref/heads/".$this->encodePath($branch));
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        return (string) $response->throw()->json('object.sha');
+    }
+
+    public function createBranch(string $repository, string $branch, string $sha): void
+    {
+        $this->request()
+            ->post("{$this->apiUrl}/repos/{$repository}/git/refs", [
+                'ref' => "refs/heads/{$branch}",
+                'sha' => $sha,
+            ])
+            ->throw();
+    }
+
+    /**
+     * The blob sha of a file on a branch, or null when the file is not there.
+     * GitHub needs it to update an existing file.
+     */
+    public function fileSha(string $repository, string $path, string $branch): ?string
+    {
+        $response = $this->request()
+            ->get("{$this->apiUrl}/repos/{$repository}/contents/".$this->encodePath($path), ['ref' => $branch]);
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        return (string) $response->throw()->json('sha');
+    }
+
+    /**
+     * Create or update a file with a commit on a branch. Pass the current sha to update.
+     */
+    public function putFile(string $repository, string $path, string $content, string $message, string $branch, ?string $sha = null): void
+    {
+        $this->request()
+            ->put("{$this->apiUrl}/repos/{$repository}/contents/".$this->encodePath($path), array_filter([
+                'message' => $message,
+                'content' => base64_encode($content),
+                'branch' => $branch,
+                'sha' => $sha,
+            ], fn (?string $value): bool => $value !== null))
+            ->throw();
+    }
+
+    /**
+     * @return array{number: int, head_sha: string, author_login: string}
+     */
+    public function createPullRequest(string $repository, string $title, string $body, string $head, string $base): array
+    {
+        $response = $this->request()
+            ->post("{$this->apiUrl}/repos/{$repository}/pulls", [
+                'title' => $title,
+                'body' => $body,
+                'head' => $head,
+                'base' => $base,
+            ])
+            ->throw();
+
+        return $this->pullRequestSummary($response->json());
+    }
+
+    /**
+     * The open pull request from a branch of this repository, if there is one.
+     *
+     * @return array{number: int, head_sha: string, author_login: string}|null
+     */
+    public function openPullRequest(string $repository, string $head): ?array
+    {
+        $owner = explode('/', $repository)[0];
+
+        $batch = $this->request()
+            ->get("{$this->apiUrl}/repos/{$repository}/pulls", [
+                'head' => "{$owner}:{$head}",
+                'state' => 'open',
+            ])
+            ->throw()
+            ->json();
+
+        return is_array($batch) && isset($batch[0]) && is_array($batch[0])
+            ? $this->pullRequestSummary($batch[0])
+            : null;
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $pullRequest
+     * @return array{number: int, head_sha: string, author_login: string}
+     */
+    private function pullRequestSummary(array $pullRequest): array
+    {
+        return [
+            'number' => (int) ($pullRequest['number'] ?? 0),
+            'head_sha' => (string) data_get($pullRequest, 'head.sha', ''),
+            'author_login' => (string) data_get($pullRequest, 'user.login', ''),
+        ];
+    }
+
+    /**
+     * Encode a path or branch for a URL, but keep its slashes.
+     */
+    private function encodePath(string $path): string
+    {
+        return implode('/', array_map('rawurlencode', explode('/', $path)));
+    }
+
     private function request(): PendingRequest
     {
         return Http::withToken($this->token)
