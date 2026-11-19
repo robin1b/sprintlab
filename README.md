@@ -1,27 +1,62 @@
-# Laravel + Vue Starter Kit
+# Sprintlab
 
-## Introduction
+Practise working in a real dev team.
 
-Our Vue starter kit provides a robust, modern starting point for building Laravel applications with a Vue frontend using [Inertia](https://inertiajs.com).
+Sprintlab puts a developer inside a simulated software company. You pick up
+tickets, write the code on your own machine, push to a real GitHub repository
+and open pull requests. AI colleagues review your work, change the requirements
+halfway and ask you to review theirs, the way it goes on a real job.
 
-Inertia allows you to build modern, single-page Vue applications using classic server-side routing and controllers. This lets you enjoy the frontend power of Vue combined with the incredible backend productivity of Laravel and lightning-fast Vite compilation.
+The fictional company is **Workkit** (working name): a platform that leases
+laptops and smartphones to employees through their employer, with a Sales and a
+Repairs department.
 
-This Vue starter kit utilizes Vue 3 and the Composition API, TypeScript, Tailwind, and the [shadcn-vue](https://www.shadcn-vue.com) component library.
+> Status: early development. Sign-in, the app shell and the GitHub connection
+> (webhook, pull request review by an AI colleague) exist. Sprints, the board
+> and the chat are next.
 
-## Official Documentation
+## How a review happens
 
-Documentation for all Laravel starter kits can be found on the [Laravel website](https://laravel.com/docs/starter-kits).
+1. You push a branch and open a pull request on GitHub.
+2. GitHub calls Sprintlab's webhook. The call is checked (signature), stored and
+   handed to a queued job.
+3. The job fetches the diff, asks the AI team lead for a review and posts it on
+   the pull request: a verdict, a summary and comments on specific lines.
 
-## Contributing
+Sprintlab never touches your machine. Everything goes through GitHub.
 
-Thank you for considering contributing to our starter kit! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Stack
 
-All contributions to the Starter Kits from now on should be made through [Maestro](https://github.com/laravel/maestro).
+- Laravel 13 (PHP 8.3+), Inertia 3, Vue 3 with TypeScript, Tailwind CSS 4
+- Laravel Socialite (GitHub sign-in) and the Laravel AI SDK (Claude)
+- SQLite locally, MySQL in production
+- PHPUnit, Pint, Larastan
 
-## Code of Conduct
+## Run it locally
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```
+composer setup
+php artisan serve
+```
 
-## License
+`composer setup` installs the PHP and Node packages, creates `.env` and the
+SQLite database, and builds the frontend. Open the login page and use
+**Dev login (local only)**: it signs you in as a demo user, so you do not need a
+GitHub app to look around. That route only exists when `APP_ENV=local`.
 
-The Laravel + Vue starter kit is open-sourced software licensed under the MIT license.
+To sign in with GitHub and receive webhooks, register a GitHub App as described
+in [docs/github-app.md](docs/github-app.md).
+
+## Checks
+
+```
+php artisan test
+vendor/bin/pint
+vendor/bin/phpstan analyse
+npm run check
+npm run types:check
+npm run build
+```
+
+Working agreements for contributors (and coding agents) are in
+[AGENTS.md](AGENTS.md).
