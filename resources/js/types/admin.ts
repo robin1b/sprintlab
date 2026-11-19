@@ -14,3 +14,11 @@ export type DayUsage = {
     calls: number;
     cost_micros: number;
 };
+
+export type DeploymentStep = {
+    key: string;
+    label: string;
+    ok: boolean | null;
+    at: string | null;
+    message: string | null;
+};

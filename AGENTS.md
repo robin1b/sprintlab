@@ -34,6 +34,16 @@ from AI colleagues. Levels: junior, medior, senior.
 - Webhook endpoints must answer fast and do the work in a queued job.
 - Friendly error responses for the browser use status 200 with an error field;
   the host replaces 5xx bodies with its own page.
+- The project root is the web root on the server (`index.php`, `.htaccess` and
+  links to `public/` files in the root). A route can never start with a folder
+  name that `.htaccess` blocks (`/app`, `/config`, `/docs`, `/storage`, ...).
+- There is no npm on the server: `public/build` is in git. With every change
+  in CSS, TypeScript or Vue, run `npm run build` and commit `public/build`.
+- Whatever must happen on the server after new files arrive (migrations,
+  imports, one-time fixes) belongs in `site:deploy`, never in a manual step.
+  The whole setup is described in `docs/deployment.md`.
+- Private files (real scenarios with answers, state files) live in
+  `storage/app/private` and are never served or committed.
 
 ## Code conventions
 
@@ -43,6 +53,9 @@ from AI colleagues. Levels: junior, medior, senior.
 - Every feature ships with tests. External HTTP calls are faked in tests.
 - Secrets only in `.env`, never in the repository. New keys also go in
   `.env.example` (empty) and are read through `config()`, never `env()` in code.
+- The privacy page (`resources/js/pages/Privacy.vue`) describes what is stored
+  and what is sent to the AI. When that changes, change the page and the date
+  in `PrivacyController::UPDATED_ON` in the same commit.
 
 ## Before calling something done
 

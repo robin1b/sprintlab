@@ -1,0 +1,94 @@
+# On the server the project root is the web root, so everything that is not meant to be public is
+# blocked here. Public are only: index.php (Laravel), build/ (CSS, JS and fonts), the favicons and
+# robots.txt. Everything else is handled by Laravel or refused.
+#
+# The rules do not depend on where this folder is mounted: on shared hosting the folder of a
+# subdomain often sits inside the folder of the main domain and can be reached through both.
+# See docs/deployment.md before changing anything here.
+
+# Never show directory listings.
+Options -Indexes
+
+# Files that are never served, wherever they are: dotfiles (.env, .git*), project and config files,
+# data (.json holds scenarios with answers and deploy state), logs, databases, keys, backups, scripts.
+<FilesMatch "(^\.|^(artisan|error_log|php_errorlog)$|\.(json|lock|neon|xml|md|log|sql|sqlite3?|db|key|pem|bak|backup|old|orig|save|swp|swo|tmp|dist|zip|tar|gz|tgz|rar|7z|dump|sh|ps1|bat|cmd|ya?ml|ini|conf|ts|vue|map)$)">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_alias.c>
+    # Source folders, dependencies, tooling and storage (Sprintlab has no public uploads).
+    RedirectMatch 404 ^/(app|bootstrap|config|database|docs|lang|node_modules|resources|routes|scripts|storage|tests|vendor|public|\.git|\.github)(/|$)
+    # Version control folders and env files anywhere in the tree.
+    RedirectMatch 404 /\.(git|svn|hg|env)(/|$)
+    # index.php is the only PHP file that may run.
+    RedirectMatch 404 ^/(?!index\.php$).+\.(php[0-9]?|phtml|phar|inc)$
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews
+    </IfModule>
+
+    RewriteEngine On
+
+    # The same blocks once more, relative to this folder. These also hold when the folder is reached
+    # through another address, for example https://main-domain/sprintlab/storage/...
+    RewriteRule ^(app|bootstrap|config|database|docs|lang|node_modules|resources|routes|scripts|storage|tests|vendor|public|\.git|\.github)(/|$) - [F,L]
+    RewriteRule ^(?!index\.php$).+\.(php[0-9]?|phtml|phar|inc)$ - [F,L]
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Handle X-XSRF-Token Header
+    RewriteCond %{HTTP:x-xsrf-token} .
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # One address: www. and http:// go permanently to https:// without www.
+    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+    RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Performance: compress text and let browsers keep static files. Built assets carry a hash in their
+# name, so they can be cached for a year. HTML is never cached here: Laravel sets its own headers.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml application/xml application/json application/javascript image/svg+xml
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 month"
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|woff2)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    <FilesMatch "\.(png|svg|ico)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+</IfModule>

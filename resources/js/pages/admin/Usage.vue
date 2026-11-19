@@ -4,7 +4,12 @@ import { computed } from 'vue';
 import UsageTable from '@/components/admin/UsageTable.vue';
 import { formatDollars, formatNumber } from '@/lib/money';
 import { usage } from '@/routes/admin';
-import type { DayUsage, FeatureUsage, ModelUsage } from '@/types';
+import type {
+    DayUsage,
+    DeploymentStep,
+    FeatureUsage,
+    ModelUsage,
+} from '@/types';
 
 defineOptions({
     layout: {
@@ -22,7 +27,33 @@ const props = defineProps<{
     days: DayUsage[];
     has_calls: boolean;
     prices_checked_on: string;
+    deployment?: DeploymentStep[];
 }>();
+
+const steps = computed(() => props.deployment ?? []);
+
+function statusOf(ok: boolean | null) {
+    if (ok === true) {
+        return { text: 'OK', tone: 'text-primary' };
+    }
+
+    if (ok === false) {
+        return { text: 'Failed', tone: 'text-destructive' };
+    }
+
+    return { text: 'Not run yet', tone: 'text-muted-foreground' };
+}
+
+function formatAt(value: string) {
+    const date = new Date(value);
+
+    return Number.isNaN(date.getTime())
+        ? value
+        : date.toLocaleString('en-GB', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+          });
+}
 
 const share = computed(() =>
     props.limit_micros === null
@@ -199,6 +230,41 @@ const modelRows = computed(() =>
                 </table>
             </section>
         </template>
+
+        <section
+            v-if="steps.length"
+            class="rounded-md border border-border bg-card"
+            data-test="deployment-card"
+        >
+            <h2 class="border-b border-border px-4 py-3 font-medium">
+                Deployment
+            </h2>
+            <ul class="divide-y divide-border">
+                <li v-for="step in steps" :key="step.key" class="px-4 py-3">
+                    <div
+                        class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1"
+                    >
+                        <span class="font-medium">{{ step.label }}</span>
+                        <span class="flex items-baseline gap-3 text-sm">
+                            <span
+                                v-if="step.at"
+                                class="font-mono text-xs text-muted-foreground"
+                                >{{ formatAt(step.at) }}</span
+                            >
+                            <span :class="statusOf(step.ok).tone">{{
+                                statusOf(step.ok).text
+                            }}</span>
+                        </span>
+                    </div>
+                    <p
+                        v-if="step.message"
+                        class="mt-1 text-xs break-words text-muted-foreground"
+                    >
+                        {{ step.message }}
+                    </p>
+                </li>
+            </ul>
+        </section>
 
         <p class="text-xs text-muted-foreground">
             Costs are calculated from the token counts and the prices in the

@@ -11,10 +11,11 @@ The fictional company is **Workkit** (working name): a platform that leases
 laptops and smartphones to employees through their employer, with a Sales and a
 Repairs department.
 
-> Status: early development. Sign-in, the app shell, the GitHub connection
-> (webhook, pull request review by an AI colleague) and the sprint engine exist:
-> a demo sprint with a board and scripted chat messages is playable. Replies
-> from colleagues and the first full sprint are next.
+> Status: early development. A demo sprint is playable from start to finish:
+> a board, chat with AI colleagues, pull request reviews, a colleague's pull
+> request to review yourself and an evaluation by the team lead. The first
+> real junior sprint and the practice repository are next. Nothing has run
+> against the live AI or a live GitHub App yet.
 
 ## How a review happens
 
@@ -47,6 +48,14 @@ GitHub app to look around. That route only exists when `APP_ENV=local`.
 
 To sign in with GitHub and receive webhooks, register a GitHub App as described
 in [docs/github-app.md](docs/github-app.md).
+
+## Deployment
+
+Sprintlab runs on shared hosting without SSH: the host pulls the files, and
+one cron job installs packages, migrates the database and runs the queue.
+`public/build` is in git because there is no npm on the server, so run
+`npm run build` and commit it with every frontend change. The whole setup is
+in [docs/deployment.md](docs/deployment.md).
 
 ## Checks
 

@@ -8,6 +8,11 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/* The build is in git (no npm on the server). Tailwind must not read class
+   names back out of its own output, or old classes would never disappear. */
+@source not '../../public/build';
+@source not '../../build';
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

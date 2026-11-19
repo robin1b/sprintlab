@@ -7,6 +7,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -44,5 +45,12 @@ class AppServiceProvider extends ServiceProvider
         DB::prohibitDestructiveCommands(
             app()->isProduction(),
         );
+
+        // Live, every link starts with APP_URL and https, whatever proxy or
+        // folder the request came through.
+        if (app()->isProduction()) {
+            URL::forceHttps();
+            URL::forceRootUrl((string) config('app.url'));
+        }
     }
 }

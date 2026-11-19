@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Private files (scenarios with answers, deploy state) are never
+            // served: no /storage/{path} route with signed links.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

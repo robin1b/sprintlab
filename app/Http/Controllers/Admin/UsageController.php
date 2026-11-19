@@ -6,6 +6,7 @@ use App\Enums\AiFeature;
 use App\Http\Controllers\Controller;
 use App\Models\AiCall;
 use App\Services\Ai\Budget;
+use App\Support\Deploy\DeployStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -71,6 +72,8 @@ class UsageController extends Controller
             'days' => $days,
             'has_calls' => AiCall::query()->exists(),
             'prices_checked_on' => (string) config('sprintlab.ai.prices_checked_on'),
+            // Without SSH this is where the owner sees whether a new version arrived.
+            'deployment' => DeployStatus::steps(),
         ]);
     }
 

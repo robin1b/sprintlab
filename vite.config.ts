@@ -41,6 +41,8 @@ export default defineConfig({
             'vendor/**',
             'node_modules/**',
             'public/**',
+            // The link in the root to public/build (see docs/deployment.md).
+            'build/**',
             'bootstrap/ssr/**',
             'tailwind.config.js',
             'resources/js/actions/**',
@@ -63,6 +65,9 @@ export default defineConfig({
         ignorePatterns: [
             '.github/**',
             'composer.json',
+            // The build is in git (no npm on the server) and is not ours to format.
+            'public/build/**',
+            'build/**',
             'resources/js/components/ui/*',
             'resources/views/mail/*',
         ],
