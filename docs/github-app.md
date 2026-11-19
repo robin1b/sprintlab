@@ -71,13 +71,13 @@ base64 -w0 sprintlab.private-key.pem      # on macOS: base64 -i sprintlab.privat
 
 ## What happens when
 
-| GitHub event                                                   | Sprintlab does                                                                                |
-| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `installation` created                                         | stores the installation and its repositories, links it to the user with that GitHub account   |
-| `installation` deleted                                         | removes the installation and everything under it                                              |
-| `installation_repositories`                                    | adds or removes repositories                                                                  |
-| `pull_request` opened, reopened, synchronize, ready_for_review | stores the pull request and queues a review (not for drafts or pull requests opened by a bot) |
-| `pull_request` closed                                          | records closed or merged                                                                      |
+| GitHub event                                                   | Sprintlab does                                                                                 |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `installation` created                                         | stores the installation and its repositories, links it to the user with that GitHub account    |
+| `installation` deleted                                         | removes the installation and everything under it                                               |
+| `installation_repositories`                                    | adds or removes repositories                                                                   |
+| `pull_request` opened, reopened, synchronize, ready_for_review | stores the pull request and queues a review (not for drafts or pull requests opened by a bot)  |
+| `pull_request` closed                                          | records closed or merged                                                                       |
 | `pull_request_review` submitted                                | queues the assessment of the user's review of a colleague's pull request (not for bot reviews) |
 
 Every call is stored in `webhook_deliveries` first. A job processes it, so

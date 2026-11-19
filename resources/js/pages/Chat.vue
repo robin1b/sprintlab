@@ -2,6 +2,7 @@
 import { Head, Link, usePage, usePoll } from '@inertiajs/vue3';
 import { ArrowLeft } from '@lucide/vue';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import ChatComposer from '@/components/chat/ChatComposer.vue';
 import { useNow } from '@/composables/useNow';
 import { formatMessageTime } from '@/lib/time';
 import { chat, dashboard } from '@/routes';
@@ -17,10 +18,23 @@ const props = defineProps<{
     colleagues: ChatColleague[];
     selected: string;
     messages: ChatMessage[];
+    can_send: boolean;
+    send_blocked_reason: string | null;
+    awaiting_reply: boolean;
+    max_characters: number;
 }>();
 
 // "selected" is polled too: on a bare /chat it is the newest conversation.
-usePoll(5_000, { only: ['colleagues', 'selected', 'messages'] });
+usePoll(5_000, {
+    only: [
+        'colleagues',
+        'selected',
+        'messages',
+        'awaiting_reply',
+        'can_send',
+        'send_blocked_reason',
+    ],
+});
 
 const page = usePage();
 const hasSprint = computed(() => page.props.sprint !== null);
@@ -44,7 +58,11 @@ function scrollToNewest(): void {
 }
 
 onMounted(scrollToNewest);
-watch(() => [props.selected, props.messages.length], scrollToNewest);
+// The typing line also grows the conversation, so it scrolls too.
+watch(
+    () => [props.selected, props.messages.length, props.awaiting_reply],
+    scrollToNewest,
+);
 </script>
 
 <template>
@@ -195,12 +213,27 @@ watch(() => [props.selected, props.messages.length], scrollToNewest);
                         </p>
                     </li>
                 </ul>
+                <p
+                    v-if="awaiting_reply"
+                    class="px-4 pb-4 text-xs text-muted-foreground"
+                    role="status"
+                >
+                    {{ current?.name }} is typing…
+                </p>
             </div>
 
+            <ChatComposer
+                v-if="can_send && current"
+                :key="current.key"
+                :colleague="current.key"
+                :colleague-name="current.name"
+                :max-characters="max_characters"
+            />
             <p
+                v-else
                 class="border-t border-border px-4 py-3 text-xs text-muted-foreground"
             >
-                Replies are not available yet.
+                {{ send_blocked_reason }}
             </p>
         </section>
     </div>

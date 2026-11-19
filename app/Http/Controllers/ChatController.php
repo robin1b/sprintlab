@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Colleague;
+use App\Http\Requests\Chat\StoreChatMessageRequest;
 use App\Models\Message;
 use App\Models\Sprint;
+use App\Services\Chat\ChatService;
 use App\Services\Sprint\SprintService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -14,7 +17,10 @@ use Inertia\Response;
 
 class ChatController extends Controller
 {
-    public function __construct(private readonly SprintService $sprints) {}
+    public function __construct(
+        private readonly SprintService $sprints,
+        private readonly ChatService $chat,
+    ) {}
 
     public function __invoke(Request $request, ?Colleague $colleague = null): Response
     {
@@ -25,6 +31,10 @@ class ChatController extends Controller
                 'colleagues' => $this->colleagues($sprint),
                 'selected' => ($colleague ?? Colleague::Sarah)->value,
                 'messages' => [],
+                'can_send' => false,
+                'send_blocked_reason' => $this->blockedReason(null),
+                'awaiting_reply' => false,
+                'max_characters' => (int) config('sprintlab.ai.chat_max_characters'),
             ]);
         }
 
@@ -54,7 +64,53 @@ class ChatController extends Controller
             'colleagues' => $this->colleagues($sprint),
             'selected' => $colleague->value,
             'messages' => $messages,
+            'can_send' => $this->blockedReason($sprint) === null,
+            'send_blocked_reason' => $this->blockedReason($sprint),
+            'awaiting_reply' => $this->awaitingReply($sprint, $colleague),
+            'max_characters' => (int) config('sprintlab.ai.chat_max_characters'),
         ]);
+    }
+
+    public function store(StoreChatMessageRequest $request, Colleague $colleague): RedirectResponse
+    {
+        $sprint = $this->sprints->currentFor($request->user());
+
+        // The flash messages are the same texts the page shows instead of the box.
+        if ($sprint === null || ! $sprint->isActive()) {
+            return back()->with('error', $sprint === null ? 'Start a sprint to chat with your team.' : 'Your sprint is paused. Resume it to chat.');
+        }
+
+        $this->chat->send($sprint, $colleague, $request->validated('body'));
+
+        return back();
+    }
+
+    /**
+     * Why the message box is not shown, or null when the user can write.
+     */
+    private function blockedReason(?Sprint $sprint): ?string
+    {
+        return match (true) {
+            $sprint === null => 'Start a sprint to chat with your team.',
+            $sprint->isPaused() => 'Your sprint is paused. Resume it to chat.',
+            ! config('sprintlab.ai.enabled') => 'Replies from your colleagues are switched off right now.',
+            default => null,
+        };
+    }
+
+    /**
+     * True while a message of the user waits for its reply. After ten minutes
+     * we stop showing "typing": the job has failed or was never run.
+     */
+    private function awaitingReply(Sprint $sprint, Colleague $colleague): bool
+    {
+        return $sprint->isActive()
+            && $sprint->messages()
+                ->where('colleague', $colleague->value)
+                ->where('from_user', true)
+                ->whereNull('answered_at')
+                ->where('created_at', '>', Carbon::now()->subMinutes(10))
+                ->exists();
     }
 
     private function newestConversation(Sprint $sprint): Colleague

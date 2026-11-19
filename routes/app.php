@@ -19,4 +19,5 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('tickets/{ticket}', [TicketController::class, 'update'])->name('tickets.update');
 
     Route::get('chat/{colleague?}', ChatController::class)->name('chat');
+    Route::post('chat/{colleague}/messages', [ChatController::class, 'store'])->name('chat.messages.store');
 });

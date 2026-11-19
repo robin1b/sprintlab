@@ -21,10 +21,14 @@ use Illuminate\Support\Carbon;
  * @property string $body
  * @property int|null $ticket_id
  * @property Carbon|null $read_at
+ * @property Carbon|null $answered_at
+ * @property string|null $model
+ * @property int $input_tokens
+ * @property int $output_tokens
  * @property-read Sprint $sprint
  * @property-read Ticket|null $ticket
  */
-#[Fillable(['sprint_id', 'colleague', 'from_user', 'body', 'ticket_id', 'read_at'])]
+#[Fillable(['sprint_id', 'colleague', 'from_user', 'body', 'ticket_id', 'read_at', 'answered_at', 'model', 'input_tokens', 'output_tokens'])]
 class Message extends Model
 {
     /** @use HasFactory<MessageFactory> */
@@ -39,6 +43,9 @@ class Message extends Model
             'colleague' => Colleague::class,
             'from_user' => 'boolean',
             'read_at' => 'datetime',
+            'answered_at' => 'datetime',
+            'input_tokens' => 'integer',
+            'output_tokens' => 'integer',
         ];
     }
 

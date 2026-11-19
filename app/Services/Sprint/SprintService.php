@@ -5,6 +5,8 @@ namespace App\Services\Sprint;
 use App\Enums\ScenarioTrigger;
 use App\Enums\SprintStatus;
 use App\Enums\TicketStatus;
+use App\Jobs\ReplyToChatMessage;
+use App\Models\Message;
 use App\Models\Scenario;
 use App\Models\Sprint;
 use App\Models\User;
@@ -111,6 +113,15 @@ class SprintService
                 'paused_at' => null,
             ]);
         });
+
+        // A chat message that arrived just before the pause was left
+        // unanswered. Ask the colleagues to answer now, once per conversation.
+        $sprint->messages()
+            ->where('from_user', true)
+            ->whereNull('answered_at')
+            ->get()
+            ->unique(fn (Message $message): string => $message->colleague->value)
+            ->each(fn (Message $message) => ReplyToChatMessage::dispatch($message->id));
     }
 
     public function currentFor(User $user): ?Sprint
