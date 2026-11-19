@@ -21,6 +21,8 @@ class ScenarioImporter
 {
     private const LEVELS = ['junior', 'medior', 'senior'];
 
+    private const SEVERITIES = ['low', 'medium', 'high'];
+
     // Event fields that have their own column. Everything else goes in `payload`.
     private const EVENT_COLUMNS = ['key', 'on', 'ticket', 'day', 'delay_minutes', 'action', 'colleague'];
 
@@ -188,6 +190,8 @@ class ScenarioImporter
             throw $this->error($where, "'released_at_start' must be true or false");
         }
 
+        $planted = $this->validatePlantedIssues($ticket, $type, $where);
+
         return [
             'key' => $key,
             'day' => $day,
@@ -197,7 +201,67 @@ class ScenarioImporter
             'description' => $this->requireString($ticket, 'description', $where),
             'acceptance_criteria' => $criteria,
             'released_at_start' => $released,
+            // Always present, so removing the issues from the file also removes them here.
+            'planted_issues' => $planted,
         ];
+    }
+
+    /**
+     * The secret problems in a colleague's pull request. Only review tickets have them.
+     *
+     * @param  array<array-key, mixed>  $ticket
+     * @return list<array{id: string, file?: string, description: string, severity: string}>|null
+     */
+    private function validatePlantedIssues(array $ticket, string $type, string $where): ?array
+    {
+        if (! array_key_exists('planted_issues', $ticket)) {
+            return null;
+        }
+
+        if ($type !== TicketType::Review->value) {
+            throw $this->error($where, "only a ticket of type 'review' can have 'planted_issues'");
+        }
+
+        $issues = $ticket['planted_issues'];
+        if (! is_array($issues) || ! array_is_list($issues)) {
+            throw $this->error($where, "'planted_issues' must be a list");
+        }
+
+        $result = [];
+        $seenIds = [];
+
+        foreach ($issues as $index => $issue) {
+            $position = "{$where}, planted issue #".($index + 1);
+
+            if (! is_array($issue)) {
+                throw $this->error($where, 'planted issue #'.($index + 1).' must be an object');
+            }
+
+            $id = $this->requireString($issue, 'id', $position);
+            if (in_array($id, $seenIds, true)) {
+                throw $this->error($position, "duplicate id '{$id}'");
+            }
+            $seenIds[] = $id;
+
+            $severity = $this->requireString($issue, 'severity', $position);
+            if (! in_array($severity, self::SEVERITIES, true)) {
+                throw $this->error($position, "unknown severity '{$severity}' (use ".implode(', ', self::SEVERITIES).')');
+            }
+
+            $planted = [
+                'id' => $id,
+                'description' => $this->requireString($issue, 'description', $position),
+                'severity' => $severity,
+            ];
+
+            if (array_key_exists('file', $issue)) {
+                $planted['file'] = $this->requireString($issue, 'file', $position);
+            }
+
+            $result[] = $planted;
+        }
+
+        return $result;
     }
 
     /**

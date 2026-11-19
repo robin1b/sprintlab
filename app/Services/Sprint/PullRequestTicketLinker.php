@@ -4,6 +4,7 @@ namespace App\Services\Sprint;
 
 use App\Enums\PullRequestState;
 use App\Enums\TicketStatus;
+use App\Enums\TicketType;
 use App\Models\PullRequest;
 use App\Models\Ticket;
 use App\Models\User;
@@ -44,6 +45,12 @@ class PullRequestTicketLinker
         }
 
         $ticket->update(['pull_request_id' => $pullRequest->id]);
+
+        // The colleague opens the pull request of a review ticket, and the user
+        // reviews it. Opening it must not move the ticket: only a good review does.
+        if ($ticket->type === TicketType::Review) {
+            return;
+        }
 
         $to = $this->targetStatus($ticket, $pullRequest, $action);
 

@@ -28,7 +28,18 @@ class ScenarioTicketFactory extends Factory
             'description' => fake()->paragraph(),
             'acceptance_criteria' => [fake()->sentence()],
             'released_at_start' => true,
+            'planted_issues' => null,
             'sort' => 0,
         ];
+    }
+
+    /**
+     * A review ticket whose pull request hides the given problems.
+     *
+     * @param  list<array{id: string, file?: string, description: string, severity: string}>  $issues
+     */
+    public function withPlantedIssues(array $issues): static
+    {
+        return $this->state(fn () => ['type' => TicketType::Review, 'planted_issues' => $issues]);
     }
 }

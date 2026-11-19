@@ -3,10 +3,13 @@
 namespace App\Services\GitHub;
 
 use App\Enums\PullRequestState;
+use App\Enums\TicketType;
+use App\Jobs\AssessUserReview;
 use App\Jobs\ReviewPullRequest;
 use App\Models\GitHubInstallation;
 use App\Models\PullRequest;
 use App\Models\Repository;
+use App\Models\Ticket;
 use App\Models\User;
 use App\Models\WebhookDelivery;
 use App\Services\Sprint\PullRequestTicketLinker;
@@ -34,6 +37,7 @@ class WebhookHandler
             'installation' => $this->installation((string) $delivery->action, $payload),
             'installation_repositories' => $this->installationRepositories($payload),
             'pull_request' => $this->pullRequest((string) $delivery->action, $payload),
+            'pull_request_review' => $this->pullRequestReview((string) $delivery->action, $payload),
             default => null, // ping and every event we did not ask for
         };
     }
@@ -144,6 +148,44 @@ class WebhookHandler
             && $installation->suspended_at === null
         ) {
             ReviewPullRequest::dispatch($pullRequest->id, $pullRequest->head_sha);
+        }
+    }
+
+    /**
+     * The user submitted a review of the colleague's pull request: have it judged.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function pullRequestReview(string $action, array $payload): void
+    {
+        $reviewId = (int) data_get($payload, 'review.id');
+
+        // A review that is only a draft (pending) is not submitted yet.
+        if ($action !== 'submitted' || $reviewId === 0 || data_get($payload, 'review.user.type') === 'Bot') {
+            return;
+        }
+
+        $githubId = (int) data_get($payload, 'sender.id');
+
+        $pullRequest = PullRequest::query()
+            ->where('number', (int) data_get($payload, 'pull_request.number'))
+            ->whereHas('repository', fn ($query) => $query->where('github_id', (int) data_get($payload, 'repository.id')))
+            ->first();
+
+        if ($githubId === 0 || $pullRequest === null) {
+            return;
+        }
+
+        // Only the user who owns the sprint can be graded, so someone else's
+        // review on the same pull request is ignored.
+        $ticket = Ticket::query()
+            ->where('pull_request_id', $pullRequest->id)
+            ->where('type', TicketType::Review)
+            ->whereHas('sprint.user', fn ($query) => $query->where('github_id', $githubId))
+            ->first();
+
+        if ($ticket !== null) {
+            AssessUserReview::dispatch($ticket->id, $reviewId);
         }
     }
 

@@ -4,6 +4,7 @@ namespace Tests\Feature\Sprint;
 
 use App\Enums\PullRequestState;
 use App\Enums\TicketStatus;
+use App\Enums\TicketType;
 use App\Jobs\ReviewPullRequest;
 use App\Models\PullRequest;
 use App\Models\Sprint;
@@ -210,5 +211,26 @@ class PullRequestTicketLinkerTest extends TestCase
         $ticket = $this->ticket($this->sprint, 'WK-1');
         $this->assertSame(PullRequest::sole()->id, $ticket->pull_request_id);
         $this->assertSame(TicketStatus::InReview, $ticket->status);
+    }
+
+    public function test_opening_the_pull_request_of_a_review_ticket_links_it_without_changing_the_status(): void
+    {
+        $this->ticket($this->sprint, 'WK-1')->update(['type' => TicketType::Review]);
+
+        $this->link('opened');
+
+        $ticket = $this->ticket($this->sprint, 'WK-1');
+        $this->assertSame($this->pullRequest->id, $ticket->pull_request_id);
+        $this->assertSame(TicketStatus::Todo, $ticket->status);
+    }
+
+    public function test_merging_the_pull_request_of_a_review_ticket_does_not_change_the_status_either(): void
+    {
+        $this->ticket($this->sprint, 'WK-1')->update(['type' => TicketType::Review, 'status' => TicketStatus::InProgress]);
+        $this->pullRequest->update(['state' => PullRequestState::Merged]);
+
+        $this->link('closed');
+
+        $this->assertSame(TicketStatus::InProgress, $this->statusOf('WK-1'));
     }
 }

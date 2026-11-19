@@ -308,4 +308,73 @@ class ScenarioImporterTest extends TestCase
 
         $this->assertImportFails($data, "'day' must be a whole number from 1 to 2");
     }
+
+    /**
+     * A scenario whose first ticket is a review ticket with the given planted issues.
+     *
+     * @return array<string, mixed>
+     */
+    private function reviewScenario(mixed $issues): array
+    {
+        $data = $this->scenarioData();
+        $data['tickets'][0]['type'] = 'review';
+        $data['tickets'][0]['planted_issues'] = $issues;
+
+        return $data;
+    }
+
+    public function test_planted_issues_of_a_review_ticket_are_stored(): void
+    {
+        $issues = [
+            ['id' => 'authorization', 'file' => 'app/Http/Controllers/RepairController.php', 'description' => 'Anyone can update any repair.', 'severity' => 'high'],
+            ['id' => 'naming', 'description' => 'Unclear variable names.', 'severity' => 'low'],
+        ];
+
+        app(ScenarioImporter::class)->importFile($this->write($this->reviewScenario($issues)));
+
+        $this->assertEquals($issues, ScenarioTicket::where('key', 'WK-1')->sole()->planted_issues);
+        $this->assertNull(ScenarioTicket::where('key', 'WK-2')->sole()->planted_issues);
+    }
+
+    public function test_removing_the_planted_issues_from_the_file_removes_them_from_the_database(): void
+    {
+        $importer = app(ScenarioImporter::class);
+        $importer->importFile($this->write($this->reviewScenario([['id' => 'a', 'description' => 'Problem.', 'severity' => 'low']])));
+
+        $data = $this->reviewScenario([]);
+        unset($data['tickets'][0]['planted_issues']);
+        $importer->importFile($this->write($data));
+
+        $this->assertNull(ScenarioTicket::where('key', 'WK-1')->sole()->planted_issues);
+    }
+
+    public function test_planted_issues_are_validated_strictly(): void
+    {
+        $valid = ['id' => 'a', 'description' => 'Problem.', 'severity' => 'high'];
+
+        $cases = [
+            'must be a list' => ['a' => $valid],
+            'must be an object' => ['text'],
+            "missing or empty 'id'" => [[...$valid, 'id' => ' ']],
+            "missing or empty 'description'" => [[...$valid, 'description' => '']],
+            "missing or empty 'severity'" => [array_diff_key($valid, ['severity' => 1])],
+            "unknown severity 'critical'" => [[...$valid, 'severity' => 'critical']],
+            "duplicate id 'a'" => [$valid, $valid],
+            "missing or empty 'file'" => [[...$valid, 'file' => '']],
+        ];
+
+        foreach ($cases as $message => $issues) {
+            $this->assertImportFails($this->reviewScenario($issues), $message);
+        }
+
+        $this->assertImportFails($this->reviewScenario('nope'), 'must be a list');
+    }
+
+    public function test_only_review_tickets_may_have_planted_issues(): void
+    {
+        $data = $this->scenarioData();
+        $data['tickets'][0]['planted_issues'] = [['id' => 'a', 'description' => 'Problem.', 'severity' => 'low']];
+
+        $this->assertImportFails($data, "only a ticket of type 'review'");
+    }
 }

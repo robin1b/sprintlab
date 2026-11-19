@@ -35,7 +35,7 @@ Repository permissions:
 Account permissions: **Email addresses: Read-only** (optional, to store the
 user's email at sign-in).
 
-Subscribe to events: **Pull request**. GitHub sends the installation events to
+Subscribe to events: **Pull request** and **Pull request review**. GitHub sends the installation events to
 every app without subscribing.
 
 After creating the app, on its settings page:
@@ -78,6 +78,7 @@ base64 -w0 sprintlab.private-key.pem      # on macOS: base64 -i sprintlab.privat
 | `installation_repositories`                                    | adds or removes repositories                                                                  |
 | `pull_request` opened, reopened, synchronize, ready_for_review | stores the pull request and queues a review (not for drafts or pull requests opened by a bot) |
 | `pull_request` closed                                          | records closed or merged                                                                      |
+| `pull_request_review` submitted                                | queues the assessment of the user's review of a colleague's pull request (not for bot reviews) |
 
 Every call is stored in `webhook_deliveries` first. A job processes it, so
 GitHub always gets a fast answer and a call that arrives twice is handled once.

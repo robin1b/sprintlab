@@ -93,6 +93,53 @@ class InstallationClient
     }
 
     /**
+     * One submitted review of a pull request.
+     *
+     * @return array{id: int, state: string, body: string, user_login: string}
+     */
+    public function review(string $repository, int $number, int $reviewId): array
+    {
+        $review = $this->request()
+            ->get("{$this->apiUrl}/repos/{$repository}/pulls/{$number}/reviews/{$reviewId}")
+            ->throw();
+
+        return [
+            'id' => (int) $review->json('id'),
+            'state' => (string) $review->json('state'),
+            // GitHub sends null for a review without text.
+            'body' => (string) $review->json('body', ''),
+            'user_login' => (string) $review->json('user.login', ''),
+        ];
+    }
+
+    /**
+     * The inline comments of one review. One page of 100 is enough for a training pull request.
+     *
+     * @return list<array{path: string, line: int|null, body: string}>
+     */
+    public function reviewComments(string $repository, int $number, int $reviewId): array
+    {
+        $batch = $this->request()
+            ->get("{$this->apiUrl}/repos/{$repository}/pulls/{$number}/reviews/{$reviewId}/comments", ['per_page' => 100])
+            ->throw()
+            ->json();
+
+        $comments = [];
+
+        foreach (is_array($batch) ? $batch : [] as $comment) {
+            $line = $comment['line'] ?? $comment['original_line'] ?? null;
+
+            $comments[] = [
+                'path' => (string) ($comment['path'] ?? ''),
+                'line' => $line === null ? null : (int) $line,
+                'body' => (string) ($comment['body'] ?? ''),
+            ];
+        }
+
+        return $comments;
+    }
+
+    /**
      * A plain comment in the conversation of a pull request.
      */
     public function createComment(string $repository, int $number, string $body): void
