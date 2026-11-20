@@ -336,4 +336,32 @@ class TicketServiceTest extends TestCase
         $this->assertSame(TicketStatus::InReview, $ticket->status);
         $this->assertSame('In review', $ticket->status->label());
     }
+
+    public function test_a_ticket_that_goes_straight_to_review_was_started_too(): void
+    {
+        $sprint = $this->startDemoSprint();
+        $ticket = $this->ticket($sprint, 'WK-1');
+
+        $event = ScenarioEvent::create([
+            'scenario_id' => $sprint->scenario_id,
+            'key' => 'tip-at-the-start',
+            'trigger' => ScenarioTrigger::TicketStarted,
+            'ticket_key' => 'WK-1',
+            'action' => ScenarioAction::Message,
+            'colleague' => Colleague::Emily,
+            'payload' => ['body' => 'Shout if the setup fails.'],
+        ]);
+
+        // The user never dragged the card: opening the pull request is the first sign.
+        $this->tickets->move($ticket, TicketStatus::InReview);
+
+        $this->assertSame(1, Message::where('body', 'Shout if the setup fails.')->count());
+
+        // Back to work and into review again: the start does not happen twice.
+        $this->tickets->move($ticket->refresh(), TicketStatus::InProgress);
+        $this->tickets->move($ticket->refresh(), TicketStatus::InReview);
+
+        $this->assertSame(1, Message::where('body', 'Shout if the setup fails.')->count());
+        $this->assertSame(1, $sprint->sprintEvents()->where('scenario_event_id', $event->id)->count());
+    }
 }

@@ -233,4 +233,54 @@ class PullRequestTicketLinkerTest extends TestCase
 
         $this->assertSame(TicketStatus::InProgress, $this->statusOf('WK-1'));
     }
+
+    public function test_pushing_a_branch_with_the_ticket_key_starts_the_ticket(): void
+    {
+        $this->githubWebhook('create', $this->branchPayload('feature/WK-1-double-approval'))->assertStatus(202);
+
+        $this->assertSame(TicketStatus::InProgress, $this->statusOf('WK-1'));
+        $this->assertSame(TicketStatus::Todo, $this->statusOf('WK-2'));
+    }
+
+    public function test_a_branch_never_moves_a_ticket_back_or_forward(): void
+    {
+        $this->ticket($this->sprint, 'WK-1')->update(['status' => TicketStatus::InReview]);
+
+        $this->githubWebhook('create', $this->branchPayload('fix/wk-1-second-try'));
+
+        $this->assertSame(TicketStatus::InReview, $this->statusOf('WK-1'));
+    }
+
+    public function test_tags_branches_without_a_key_and_branches_of_the_app_itself_change_nothing(): void
+    {
+        $this->githubWebhook('create', $this->branchPayload('WK-1', refType: 'tag'), 'delivery-1');
+        $this->githubWebhook('create', $this->branchPayload('feature/cleanup'), 'delivery-2');
+        $this->githubWebhook('create', $this->branchPayload('feature/WK-1-by-josh', senderType: 'Bot'), 'delivery-3');
+        $this->githubWebhook('create', $this->branchPayload('feature/WK-10-other-ticket'), 'delivery-4');
+
+        $this->assertSame(TicketStatus::Todo, $this->statusOf('WK-1'));
+    }
+
+    public function test_a_branch_for_a_review_ticket_does_not_start_it(): void
+    {
+        $this->ticket($this->sprint, 'WK-1')->update(['type' => TicketType::Review]);
+
+        $this->githubWebhook('create', $this->branchPayload('feature/WK-1-report-repair'));
+
+        $this->assertSame(TicketStatus::Todo, $this->statusOf('WK-1'));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function branchPayload(string $ref, string $refType = 'branch', string $senderType = 'User'): array
+    {
+        return [
+            'ref' => $ref,
+            'ref_type' => $refType,
+            'installation' => ['id' => 9001],
+            'repository' => ['id' => 7001, 'full_name' => 'robin/workkit', 'owner' => ['login' => 'robin', 'id' => 4242]],
+            'sender' => ['id' => 4242, 'login' => 'robin', 'type' => $senderType],
+        ];
+    }
 }

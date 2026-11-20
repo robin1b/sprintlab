@@ -41,7 +41,16 @@ class TicketService
         }
 
         DB::transaction(function () use ($ticket, $sprint, $to): void {
+            $from = $ticket->status;
+
             $ticket->update(['status' => $to]);
+
+            // A pull request can be the first sign of life: the ticket goes
+            // from "to do" straight to review. It was started all the same,
+            // so what the scenario planned for the start still happens.
+            if ($from === TicketStatus::Todo && in_array($to, [TicketStatus::InReview, TicketStatus::Done], true)) {
+                $this->engine->dispatch($sprint, ScenarioTrigger::TicketStarted, $ticket);
+            }
 
             $trigger = match ($to) {
                 TicketStatus::Todo => null,

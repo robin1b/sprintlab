@@ -36,7 +36,7 @@ Repository permissions:
 Account permissions: **Email addresses: Read-only** (optional, to store the
 user's email at sign-in).
 
-Subscribe to events: **Pull request** and **Pull request review**. GitHub sends the installation events to
+Subscribe to events: **Pull request**, **Pull request review** and **Create** (a new branch moves its ticket to "In progress"). GitHub sends the installation events to
 every app without subscribing.
 
 After creating the app, on its settings page:
@@ -80,6 +80,7 @@ base64 -w0 sprintlab.private-key.pem      # on macOS: base64 -i sprintlab.privat
 | `pull_request` opened, reopened, synchronize, ready_for_review | stores the pull request and queues a review (not for drafts or pull requests opened by a bot)                                                                                                                                                                                               |
 | `pull_request` closed                                          | records closed or merged                                                                                                                                                                                                                                                                    |
 | `pull_request_review` submitted                                | queues the assessment of the user's review of a colleague's pull request (not for bot reviews)                                                                                                                                                                                              |
+| `create` (a branch)                                            | moves the ticket whose key is in the branch name from "To do" to "In progress" (not for branches made by the app itself)                                                                                                                                                                    |
 | (no event: a scenario event `open_pull_request` fires)         | queues a job that commits the colleague's files to a new branch and opens the pull request; the webhook that follows links it to the ticket without a review by Sarah, because the author is a bot. Without a connected repository the job is queued again every minute by `sprintlab:tick` |
 
 Every call is stored in `webhook_deliveries` first. A job processes it, so

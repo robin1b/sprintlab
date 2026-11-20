@@ -66,12 +66,48 @@ class PullRequestTicketLinker
     }
 
     /**
+     * The user pushed a new branch. When its name holds the key of a ticket
+     * that is still "to do", the ticket moves to "in progress", like a board
+     * that follows the repository.
+     */
+    public function branchCreated(User $user, string $branch): void
+    {
+        $sprint = $this->sprints->currentFor($user);
+
+        if ($sprint === null) {
+            return;
+        }
+
+        $ticket = $this->findTicketIn(
+            $sprint->tickets()->whereNotNull('released_at')->orderBy('sort')->orderBy('id')->get(),
+            $branch,
+        );
+
+        // A review ticket is about a colleague's branch, never about the user's own.
+        if ($ticket === null || $ticket->type === TicketType::Review || $ticket->status !== TicketStatus::Todo) {
+            return;
+        }
+
+        try {
+            $this->tickets->move($ticket, TicketStatus::InProgress);
+        } catch (DomainException) {
+            // The sprint is paused: the ticket waits.
+        }
+    }
+
+    /**
      * @param  Collection<int, Ticket>  $tickets
      */
     private function findTicket(Collection $tickets, PullRequest $pullRequest): ?Ticket
     {
-        $text = $pullRequest->head_ref.' '.$pullRequest->title;
+        return $this->findTicketIn($tickets, $pullRequest->head_ref.' '.$pullRequest->title);
+    }
 
+    /**
+     * @param  Collection<int, Ticket>  $tickets
+     */
+    private function findTicketIn(Collection $tickets, string $text): ?Ticket
+    {
         return $tickets->first(function (Ticket $ticket) use ($text): bool {
             // The key must stand alone, so WK-1 does not match WK-10.
             $pattern = '/(?<![A-Za-z0-9])'.preg_quote($ticket->key, '/').'(?![0-9])/i';

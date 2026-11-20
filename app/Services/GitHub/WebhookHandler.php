@@ -38,6 +38,7 @@ class WebhookHandler
             'installation_repositories' => $this->installationRepositories($payload),
             'pull_request' => $this->pullRequest((string) $delivery->action, $payload),
             'pull_request_review' => $this->pullRequestReview((string) $delivery->action, $payload),
+            'create' => $this->branchCreated($payload),
             default => null, // ping and every event we did not ask for
         };
     }
@@ -194,6 +195,26 @@ class WebhookHandler
 
         if ($ticket !== null) {
             AssessUserReview::dispatch($ticket->id, $reviewId);
+        }
+    }
+
+    /**
+     * A new branch was pushed: the ticket named in it is now being worked on.
+     * Branches made by the app itself (a colleague's pull request) do not count.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function branchCreated(array $payload): void
+    {
+        if (data_get($payload, 'ref_type') !== 'branch' || data_get($payload, 'sender.type') === 'Bot') {
+            return;
+        }
+
+        $installation = GitHubInstallation::where('installation_id', (int) data_get($payload, 'installation.id'))->first();
+        $user = $installation?->user;
+
+        if ($user !== null) {
+            $this->linker->branchCreated($user, (string) data_get($payload, 'ref'));
         }
     }
 
