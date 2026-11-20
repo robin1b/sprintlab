@@ -116,7 +116,7 @@
     "src": "node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-vietnamese-wght-normal.woff2"
   },
   "resources/css/app.css": {
-    "file": "assets/app-BRm_HHLS.css",
+    "file": "assets/app-gAAutCeh.css",
     "name": "app",
     "names": [
       "app.css"
@@ -140,7 +140,7 @@
     ]
   },
   "resources/js/app.ts": {
-    "file": "assets/app-DTgj8lSa.js",
+    "file": "assets/app-DvHskuz8.js",
     "name": "app",
     "src": "resources/js/app.ts",
     "isEntry": true,
@@ -168,7 +168,7 @@
     ]
   },
   "resources/js/pages/Board.vue": {
-    "file": "assets/Board-CSYaje2F.js",
+    "file": "assets/Board-Bd9KeXUP.js",
     "name": "Board",
     "src": "resources/js/pages/Board.vue",
     "isDynamicEntry": true,
@@ -183,7 +183,7 @@
     ]
   },
   "resources/js/pages/Chat.vue": {
-    "file": "assets/Chat-niEurwe3.js",
+    "file": "assets/Chat-BA57iR9L.js",
     "name": "Chat",
     "src": "resources/js/pages/Chat.vue",
     "isDynamicEntry": true,
@@ -197,7 +197,7 @@
     ]
   },
   "resources/js/pages/Dashboard.vue": {
-    "file": "assets/Dashboard-BbI42DrD.js",
+    "file": "assets/Dashboard-B74vyNuV.js",
     "name": "Dashboard",
     "src": "resources/js/pages/Dashboard.vue",
     "isDynamicEntry": true,
@@ -211,7 +211,7 @@
     ]
   },
   "resources/js/pages/ErrorPage.vue": {
-    "file": "assets/ErrorPage-Cvlus0Wt.js",
+    "file": "assets/ErrorPage-v4KIm12S.js",
     "name": "ErrorPage",
     "src": "resources/js/pages/ErrorPage.vue",
     "isDynamicEntry": true,
@@ -223,7 +223,7 @@
     ]
   },
   "resources/js/pages/Privacy.vue": {
-    "file": "assets/Privacy-BeZkWDRw.js",
+    "file": "assets/Privacy-BZwYcTz-.js",
     "name": "Privacy",
     "src": "resources/js/pages/Privacy.vue",
     "isDynamicEntry": true,
@@ -234,7 +234,7 @@
     ]
   },
   "resources/js/pages/Welcome.vue": {
-    "file": "assets/Welcome-k2Nln0rd.js",
+    "file": "assets/Welcome-B1REQLQe.js",
     "name": "Welcome",
     "src": "resources/js/pages/Welcome.vue",
     "isDynamicEntry": true,
@@ -246,7 +246,7 @@
     ]
   },
   "resources/js/pages/admin/Usage.vue": {
-    "file": "assets/Usage-CHeW7Pzw.js",
+    "file": "assets/Usage-CMbAsuIV.js",
     "name": "Usage",
     "src": "resources/js/pages/admin/Usage.vue",
     "isDynamicEntry": true,
@@ -266,7 +266,7 @@
     ]
   },
   "resources/js/pages/settings/Profile.vue": {
-    "file": "assets/Profile-BwS6zDuT.js",
+    "file": "assets/Profile-Dj2SxDhX.js",
     "name": "Profile",
     "src": "resources/js/pages/settings/Profile.vue",
     "isDynamicEntry": true,

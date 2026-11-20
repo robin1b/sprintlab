@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Colleague;
+use App\Enums\EvaluationStatus;
 use App\Enums\SprintStatus;
 use App\Enums\TicketStatus;
 use App\Models\Scenario;
 use App\Models\Sprint;
 use App\Models\SprintEvaluation;
+use App\Models\User;
 use App\Services\Evaluation\SprintEvaluationService;
 use App\Services\Sprint\SprintService;
 use Illuminate\Http\Request;
@@ -27,7 +29,7 @@ class DashboardController extends Controller
         $user = $request->user();
         $sprint = $this->sprints->currentFor($user);
 
-        $scenario = Scenario::query()->orderBy('id')->first();
+        $offers = $sprint === null ? $this->offers($user) : ['scenarios' => [], 'recommended_id' => null];
 
         $completed = null;
 
@@ -44,13 +46,8 @@ class DashboardController extends Controller
         }
 
         return Inertia::render('Dashboard', [
-            'scenario' => $scenario === null ? null : [
-                'id' => $scenario->id,
-                'title' => $scenario->title,
-                'summary' => $scenario->summary,
-                'level' => $scenario->level,
-                'duration_days' => $scenario->duration_days,
-            ],
+            'scenarios' => $offers['scenarios'],
+            'recommended_id' => $offers['recommended_id'],
             'completed' => $completed,
             'progress' => $this->evaluations->progressFor($user),
             'overview' => $sprint === null ? null : $this->overview($sprint),
@@ -60,6 +57,70 @@ class DashboardController extends Controller
                 'role' => $colleague->role(),
             ])->all(),
         ]);
+    }
+
+    /**
+     * The sprints this user can start: the track of their level first, then the demos and extras.
+     *
+     * @return array{scenarios: list<array<string, mixed>>, recommended_id: int|null}
+     */
+    private function offers(User $user): array
+    {
+        $track = Scenario::query()
+            ->where('level', $user->level->value)
+            ->whereNotNull('sequence')
+            ->orderBy('sequence')->orderBy('id')
+            ->get();
+
+        $extras = Scenario::query()->whereNull('sequence')->orderBy('id')->get();
+
+        // Loaded once. Newest first, so the first sprint per scenario is the latest one.
+        $completedSprints = $user->sprints()
+            ->where('status', SprintStatus::Completed)
+            ->with('evaluation')
+            ->orderByDesc('completed_at')->orderByDesc('id')
+            ->get()
+            ->groupBy('scenario_id');
+
+        $offers = [];
+        $passedIds = [];
+
+        foreach ($track->concat($extras) as $scenario) {
+            $played = $completedSprints->get($scenario->id);
+            $latest = $played?->first();
+            $evaluation = $latest?->evaluation;
+            $finished = $evaluation !== null && $evaluation->status === EvaluationStatus::Completed;
+
+            if ($played?->contains(fn (Sprint $done) => $done->evaluation?->status === EvaluationStatus::Completed && $done->evaluation->passed === true)) {
+                $passedIds[$scenario->id] = true;
+            }
+
+            $offers[] = [
+                'id' => $scenario->id,
+                'title' => $scenario->title,
+                'summary' => $scenario->summary,
+                'level' => $scenario->level,
+                'duration_days' => $scenario->duration_days,
+                'sequence' => $scenario->sequence,
+                'is_demo' => $scenario->sequence === null,
+                'result' => $latest === null ? null : [
+                    'overall' => $finished ? $evaluation->overall : null,
+                    'passed' => $finished ? $evaluation->passed : null,
+                    'completed_at' => $latest->completed_at?->toIso8601String(),
+                ],
+            ];
+        }
+
+        $collection = collect($offers);
+
+        $recommended = $collection->first(fn (array $offer) => $offer['sequence'] !== null && ! isset($passedIds[$offer['id']]))
+            ?? $collection->first(fn (array $offer) => $offer['result'] === null)
+            ?? $collection->first();
+
+        return [
+            'scenarios' => $offers,
+            'recommended_id' => $recommended['id'] ?? null,
+        ];
     }
 
     /**

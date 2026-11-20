@@ -45,6 +45,15 @@ export type ScenarioOffer = {
     summary: string | null;
     level: string;
     duration_days: number;
+    sequence: number | null;
+    is_demo: boolean;
+    result: ScenarioResult | null;
+};
+
+export type ScenarioResult = {
+    overall: number | null;
+    passed: boolean | null;
+    completed_at: string;
 };
 
 export type SprintOverview = {

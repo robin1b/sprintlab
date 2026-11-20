@@ -3,6 +3,7 @@
 namespace Tests\Feature\Sprint;
 
 use App\Enums\SprintStatus;
+use App\Models\Scenario;
 use App\Models\Sprint;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,6 +37,32 @@ class SprintControllerTest extends TestCase
         $this->assertSame(SprintStatus::Active, $sprint->status);
         $this->assertSame($scenario->id, $sprint->scenario_id);
         $this->assertSame(2, $sprint->tickets()->whereNotNull('released_at')->count());
+    }
+
+    public function test_a_junior_can_start_a_track_scenario_of_their_level_and_a_demo()
+    {
+        $track = Scenario::factory()->create(['level' => 'junior', 'sequence' => 1]);
+        $demo = Scenario::factory()->create(['level' => 'senior', 'sequence' => null]);
+        $user = User::factory()->create(['level' => 'junior']);
+
+        $this->actingAs($user)->post(route('sprints.store'), ['scenario_id' => $track->id])->assertRedirect(route('board'));
+        $this->assertSame($track->id, $user->sprints()->sole()->scenario_id);
+
+        $other = User::factory()->create(['level' => 'junior']);
+        $this->actingAs($other)->post(route('sprints.store'), ['scenario_id' => $demo->id])->assertRedirect(route('board'));
+        $this->assertSame($demo->id, $other->sprints()->sole()->scenario_id);
+    }
+
+    public function test_a_junior_cannot_start_a_medior_track_scenario()
+    {
+        $medior = Scenario::factory()->create(['level' => 'medior', 'sequence' => 1]);
+        $user = User::factory()->create(['level' => 'junior']);
+
+        $this->actingAs($user)
+            ->post(route('sprints.store'), ['scenario_id' => $medior->id])
+            ->assertSessionHasErrors(['scenario_id' => 'This sprint is not available at your level.']);
+
+        $this->assertSame(0, $user->sprints()->count());
     }
 
     public function test_a_second_start_is_refused_with_a_flash_error()

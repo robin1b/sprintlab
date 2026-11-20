@@ -3,6 +3,8 @@ import { Head, Link, router, useForm, usePage, usePoll } from '@inertiajs/vue3';
 import { Check } from '@lucide/vue';
 import { computed, watch } from 'vue';
 import ColleagueList from '@/components/ColleagueList.vue';
+import { offerFacts, offerResult } from '@/components/dashboard/offer';
+import OfferRow from '@/components/dashboard/OfferRow.vue';
 import EvaluationCard from '@/components/evaluation/EvaluationCard.vue';
 import LevelProgress from '@/components/evaluation/LevelProgress.vue';
 import StatusChip from '@/components/StatusChip.vue';
@@ -26,7 +28,8 @@ defineOptions({
 });
 
 const props = defineProps<{
-    scenario: ScenarioOffer | null;
+    scenarios: ScenarioOffer[];
+    recommended_id: number | null;
     completed: {
         scenario_title: string;
         completed_at: string | null;
@@ -70,9 +73,23 @@ const overdue = computed(
             new Date(sprint.value.deadline_at).getTime() < now.value),
 );
 
-const startForm = useForm({ scenario_id: props.scenario?.id ?? 0 });
+const recommended = computed(
+    () =>
+        props.scenarios.find((offer) => offer.id === props.recommended_id) ??
+        null,
+);
+const others = computed(() =>
+    props.scenarios.filter((offer) => offer.id !== recommended.value?.id),
+);
 
-function startSprint(): void {
+const startForm = useForm({ scenario_id: 0 });
+
+function startSprint(id: number): void {
+    if (startForm.processing) {
+        return;
+    }
+
+    startForm.scenario_id = id;
     startForm.post(store.url());
 }
 
@@ -103,7 +120,7 @@ const steps = computed(() => [
             ? 'Start another sprint'
             : 'Start your first sprint',
         done: false,
-        canStart: props.scenario !== null,
+        canStart: recommended.value !== null,
     },
 ]);
 
@@ -266,57 +283,97 @@ const statusLabels = computed(() => {
             </section>
         </template>
 
-        <section v-else class="rounded-md border border-border bg-card">
-            <h2 class="border-b border-border px-4 py-3 font-medium">
-                Getting started
-            </h2>
-            <ol class="divide-y divide-border">
-                <li
-                    v-for="(step, index) in steps"
-                    :key="step.title"
-                    class="flex items-center gap-3 px-4 py-3"
-                    :class="
-                        step.done || step.canStart
-                            ? ''
-                            : 'text-muted-foreground'
-                    "
-                >
-                    <span
-                        class="flex size-5 shrink-0 items-center justify-center rounded-sm border font-mono text-xs"
-                        :class="
-                            step.done
-                                ? 'border-primary text-primary'
-                                : 'border-border'
-                        "
+        <template v-else>
+            <section
+                v-if="recommended"
+                class="rounded-md border border-border bg-card"
+            >
+                <div class="px-4 py-3">
+                    <h2 class="font-medium">{{ recommended.title }}</h2>
+                    <p class="mt-1 font-mono text-xs text-muted-foreground">
+                        {{ offerFacts(recommended) }}
+                        <template v-if="offerResult(recommended)">
+                            · {{ offerResult(recommended) }}
+                        </template>
+                    </p>
+                    <p
+                        v-if="recommended.summary"
+                        class="mt-2 text-muted-foreground"
                     >
-                        <Check v-if="step.done" class="size-3.5" />
-                        <template v-else>{{ index + 1 }}</template>
-                    </span>
-                    <span class="flex-1">{{ step.title }}</span>
+                        {{ recommended.summary }}
+                    </p>
                     <Button
-                        v-if="step.canStart"
-                        size="sm"
+                        class="mt-4"
                         :disabled="startForm.processing"
-                        @click="startSprint"
+                        @click="startSprint(recommended.id)"
                     >
                         Start sprint
                     </Button>
-                    <span
-                        v-else-if="!step.done"
-                        class="rounded-sm border border-border px-1.5 font-mono text-xs"
-                    >
-                        soon
-                    </span>
-                </li>
-            </ol>
-            <p
-                v-if="scenario"
-                class="border-t border-border px-4 py-3 text-sm text-muted-foreground"
+                </div>
+            </section>
+
+            <section
+                v-if="others.length"
+                class="rounded-md border border-border bg-card"
             >
-                The GitHub connection is not live yet. You can already play a
-                sprint by moving tickets yourself.
-            </p>
-        </section>
+                <h2 class="border-b border-border px-4 py-3 font-medium">
+                    Other sprints
+                </h2>
+                <ul class="divide-y divide-border">
+                    <OfferRow
+                        v-for="offer in others"
+                        :key="offer.id"
+                        :offer="offer"
+                        :disabled="startForm.processing"
+                        @start="startSprint"
+                    />
+                </ul>
+            </section>
+
+            <section v-else class="rounded-md border border-border bg-card">
+                <h2 class="border-b border-border px-4 py-3 font-medium">
+                    Getting started
+                </h2>
+                <ol class="divide-y divide-border">
+                    <li
+                        v-for="(step, index) in steps"
+                        :key="step.title"
+                        class="flex items-center gap-3 px-4 py-3"
+                        :class="
+                            step.done || step.canStart
+                                ? ''
+                                : 'text-muted-foreground'
+                        "
+                    >
+                        <span
+                            class="flex size-5 shrink-0 items-center justify-center rounded-sm border font-mono text-xs"
+                            :class="
+                                step.done
+                                    ? 'border-primary text-primary'
+                                    : 'border-border'
+                            "
+                        >
+                            <Check v-if="step.done" class="size-3.5" />
+                            <template v-else>{{ index + 1 }}</template>
+                        </span>
+                        <span class="flex-1">{{ step.title }}</span>
+                        <span
+                            v-if="!step.done && !step.canStart"
+                            class="rounded-sm border border-border px-1.5 font-mono text-xs"
+                        >
+                            soon
+                        </span>
+                    </li>
+                </ol>
+                <p
+                    v-if="recommended"
+                    class="border-t border-border px-4 py-3 text-sm text-muted-foreground"
+                >
+                    The GitHub connection is not live yet. You can already play
+                    a sprint by moving tickets yourself.
+                </p>
+            </section>
+        </template>
 
         <section class="rounded-md border border-border bg-card">
             <h2 class="border-b border-border px-4 py-3 font-medium">
