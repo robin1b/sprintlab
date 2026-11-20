@@ -7,9 +7,15 @@ use App\Enums\AiFeature;
 use App\Enums\Colleague;
 use App\Enums\ReviewStatus;
 use App\Enums\ReviewVerdict;
+use App\Enums\TicketType;
 use App\Jobs\ReviewPullRequest;
 use App\Models\AiCall;
+use App\Models\PullRequest;
 use App\Models\Review;
+use App\Models\Scenario;
+use App\Models\ScenarioTicket;
+use App\Models\Sprint;
+use App\Models\Ticket;
 use App\Models\User;
 use App\Services\Review\PullRequestReviewService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -294,5 +300,177 @@ class PullRequestReviewTest extends TestCase
         PullRequestReviewer::assertNeverPrompted();
         $this->assertSame(1, AiCall::count());
         Http::assertNotSent(fn (Request $request) => str_ends_with($request->url(), '/pulls/12/reviews'));
+    }
+
+    /**
+     * Link the pull request to a ticket of a sprint.
+     *
+     * @param  array<string, mixed>  $ticket
+     * @param  array<string, mixed>  $scenarioTicket
+     * @param  array<string, mixed>  $scenario
+     */
+    private function linkTicket(PullRequest $pullRequest, array $ticket = [], array $scenarioTicket = [], array $scenario = []): Ticket
+    {
+        $scenarioModel = Scenario::factory()->create(['level' => 'medior', ...$scenario]);
+        $source = ScenarioTicket::factory()->create(['scenario_id' => $scenarioModel->id, ...$scenarioTicket]);
+        $sprint = Sprint::factory()->create(['scenario_id' => $scenarioModel->id]);
+
+        return Ticket::factory()->create([
+            'sprint_id' => $sprint->id,
+            'scenario_ticket_id' => $source->id,
+            'key' => 'WK-7',
+            'title' => 'Block double approval',
+            'description' => 'Approving twice creates two contracts.',
+            'acceptance_criteria' => ['Approving twice is refused', 'A test covers it', 'Added later: log the attempt'],
+            'reporter' => Colleague::Daniel,
+            'pull_request_id' => $pullRequest->id,
+            ...$ticket,
+        ]);
+    }
+
+    public function test_the_prompt_holds_the_ticket_its_current_criteria_and_the_review_notes(): void
+    {
+        $pullRequest = $this->createPullRequest();
+        $this->linkTicket($pullRequest, scenarioTicket: ['review_notes' => 'Typical mistake: forgetting the locked row.']);
+        $this->fakeGitHub();
+        $this->fakeReviewer();
+
+        app(PullRequestReviewService::class)->review($pullRequest, $this->sha);
+
+        PullRequestReviewer::assertPrompted(fn (AgentPrompt $prompt) => $prompt->contains('Ticket WK-7: Block double approval')
+            && $prompt->contains('Reported by Daniel.')
+            && $prompt->contains('Approving twice creates two contracts.')
+            && $prompt->contains('- Approving twice is refused')
+            && $prompt->contains('- A test covers it')
+            && $prompt->contains('- Added later: log the attempt')
+            && $prompt->contains('Notes from the team for you as the reviewer.')
+            && $prompt->contains('Typical mistake: forgetting the locked row.')
+            && $prompt->contains('Pull request #12'));
+    }
+
+    public function test_without_review_notes_the_notes_paragraph_is_left_out(): void
+    {
+        $pullRequest = $this->createPullRequest();
+        $this->linkTicket($pullRequest, ['acceptance_criteria' => []]);
+        $this->fakeGitHub();
+        $this->fakeReviewer();
+
+        app(PullRequestReviewService::class)->review($pullRequest, $this->sha);
+
+        PullRequestReviewer::assertPrompted(fn (AgentPrompt $prompt) => $prompt->contains('Ticket WK-7')
+            && $prompt->contains('- (none)')
+            && ! $prompt->contains('Notes from the team'));
+    }
+
+    public function test_without_a_linked_ticket_the_prompt_says_so(): void
+    {
+        $pullRequest = $this->createPullRequest();
+        $this->fakeGitHub();
+        $this->fakeReviewer();
+
+        app(PullRequestReviewService::class)->review($pullRequest, $this->sha);
+
+        PullRequestReviewer::assertPrompted(fn (AgentPrompt $prompt) => $prompt->contains('This pull request is not linked to a ticket on the board.')
+            && ! $prompt->contains('Acceptance criteria'));
+    }
+
+    public function test_the_reviewer_named_by_the_ticket_writes_the_review(): void
+    {
+        $pullRequest = $this->createPullRequest();
+        $this->linkTicket($pullRequest, scenarioTicket: ['reviewer' => Colleague::Emily]);
+        $this->fakeGitHub();
+        $this->fakeReviewer();
+
+        app(PullRequestReviewService::class)->review($pullRequest, $this->sha);
+
+        $this->assertSame(Colleague::Emily, Review::sole()->colleague);
+        Http::assertSent(fn (Request $request) => str_ends_with($request->url(), '/pulls/12/reviews')
+            && str_starts_with($request['body'], '**Emily** (Developer)'));
+    }
+
+    public function test_a_given_colleague_wins_over_the_reviewer_of_the_ticket(): void
+    {
+        $pullRequest = $this->createPullRequest();
+        $this->linkTicket($pullRequest, scenarioTicket: ['reviewer' => Colleague::Emily]);
+        $this->fakeGitHub();
+        $this->fakeReviewer();
+
+        app(PullRequestReviewService::class)->review($pullRequest, $this->sha, Colleague::Josh);
+
+        $this->assertSame(Colleague::Josh, Review::sole()->colleague);
+    }
+
+    public function test_a_pull_request_of_a_review_ticket_is_not_reviewed(): void
+    {
+        $pullRequest = $this->createPullRequest();
+        $this->linkTicket($pullRequest, ['type' => TicketType::Review]);
+        $this->fakeGitHub();
+        $this->fakeReviewer();
+
+        $this->assertNull(app(PullRequestReviewService::class)->review($pullRequest, $this->sha));
+
+        $this->assertSame(0, Review::count());
+        PullRequestReviewer::assertNeverPrompted();
+        Http::assertNothingSent();
+    }
+
+    public function test_the_level_and_briefing_of_the_scenario_reach_the_reviewer(): void
+    {
+        $pullRequest = $this->createPullRequest();
+        $this->linkTicket($pullRequest, scenario: ['briefing' => 'BRIEFING-IN-REVIEW']);
+        $this->fakeGitHub();
+        $this->fakeReviewer();
+
+        app(PullRequestReviewService::class)->review($pullRequest, $this->sha);
+
+        PullRequestReviewer::assertPrompted(fn (AgentPrompt $prompt) => str_contains($prompt->agent->instructions(), 'BRIEFING-IN-REVIEW')
+            && str_contains($prompt->agent->instructions(), 'written by a medior developer'));
+    }
+
+    public function test_the_briefing_is_part_of_the_instructions_of_the_reviewer(): void
+    {
+        $instructions = (new PullRequestReviewer(Colleague::Sarah, 'junior', 'BRIEFING TEXT'))->instructions();
+
+        $this->assertStringContainsString("\n\nWhat you know about the codebase and how the team works:\nBRIEFING TEXT", $instructions);
+        $this->assertStringContainsString('Go through its acceptance criteria one by one', $instructions);
+        $this->assertStringContainsString('Notes from the team in the prompt are private guidance.', $instructions);
+        $this->assertStringNotContainsString('What you know about', (new PullRequestReviewer(Colleague::Sarah))->instructions());
+    }
+
+    public function test_a_second_review_knows_what_the_first_one_said(): void
+    {
+        $pullRequest = $this->createPullRequest();
+
+        Review::create([
+            'pull_request_id' => $pullRequest->id,
+            'colleague' => Colleague::Sarah,
+            'head_sha' => str_repeat('0', 40),
+            'status' => ReviewStatus::Posted,
+            'verdict' => ReviewVerdict::RequestChanges,
+            'summary' => 'The guard is right, but nothing tests the second approval.',
+            'comments' => [['path' => 'app/Models/LeaseRequest.php', 'line' => 12, 'body' => 'Please cover this with a test.']],
+        ]);
+
+        $this->fakeGitHub();
+        $this->fakeReviewer('approve');
+
+        (new ReviewPullRequest($pullRequest->id, $pullRequest->head_sha))->handle(app(PullRequestReviewService::class));
+
+        PullRequestReviewer::assertPrompted(fn (AgentPrompt $prompt) => $prompt->contains('reviewed before, on an older commit, by Sarah')
+            && $prompt->contains('The verdict was "request changes"')
+            && $prompt->contains('nothing tests the second approval')
+            && $prompt->contains('- app/Models/LeaseRequest.php: Please cover this with a test.')
+            && $prompt->contains('do not repeat a remark that was fixed'));
+    }
+
+    public function test_a_first_review_has_no_earlier_review_in_its_prompt(): void
+    {
+        $pullRequest = $this->createPullRequest();
+        $this->fakeGitHub();
+        $this->fakeReviewer();
+
+        (new ReviewPullRequest($pullRequest->id, $pullRequest->head_sha))->handle(app(PullRequestReviewService::class));
+
+        PullRequestReviewer::assertPrompted(fn (AgentPrompt $prompt) => ! $prompt->contains('reviewed before'));
     }
 }

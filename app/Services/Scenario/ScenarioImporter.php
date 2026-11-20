@@ -93,7 +93,7 @@ class ScenarioImporter
 
     /**
      * @param  array<array-key, mixed>  $data
-     * @return array{slug: string, title: string, level: string, summary: string|null, duration_days: int, tickets: list<array<string, mixed>>, events: list<array<string, mixed>>}
+     * @return array{slug: string, title: string, level: string, summary: string|null, duration_days: int, sequence: int|null, briefing: string|null, colleague_notes: array<string, string>|null, tickets: list<array<string, mixed>>, events: list<array<string, mixed>>}
      */
     private function validate(array $data, string $file, string $directory): array
     {
@@ -110,10 +110,22 @@ class ScenarioImporter
             throw $this->error($where, "'duration_days' must be a whole number of at least 1");
         }
 
+        $sequence = $data['sequence'] ?? null;
+        if ($sequence !== null && (! is_int($sequence) || $sequence < 1)) {
+            throw $this->error($where, "'sequence' must be a whole number of at least 1");
+        }
+
         $summary = $data['summary'] ?? null;
         if ($summary !== null && ! is_string($summary)) {
             throw $this->error($where, "'summary' must be text");
         }
+
+        $briefing = $data['briefing'] ?? null;
+        if ($briefing !== null && (! is_string($briefing) || trim($briefing) === '')) {
+            throw $this->error($where, "'briefing' must be text");
+        }
+
+        $colleagueNotes = $this->validateColleagueNotes($data, $where);
 
         if (! isset($data['tickets']) || ! is_array($data['tickets']) || ! array_is_list($data['tickets'])) {
             throw $this->error($where, "'tickets' must be a list");
@@ -146,6 +158,11 @@ class ScenarioImporter
             'level' => $level,
             'summary' => $summary,
             'duration_days' => $duration,
+            // Always present, so removing it from the file also removes it here.
+            'sequence' => $sequence,
+            // Always present, so removing them from the file also removes them here.
+            'briefing' => $briefing,
+            'colleague_notes' => $colleagueNotes,
             'tickets' => $tickets,
             'events' => $eventList,
         ];
@@ -198,6 +215,26 @@ class ScenarioImporter
 
         $planted = $this->validatePlantedIssues($ticket, $type, $where);
 
+        $reviewNotes = $ticket['review_notes'] ?? null;
+        if ($reviewNotes !== null) {
+            if ($type === TicketType::Review->value) {
+                throw $this->error($where, "a ticket of type 'review' cannot have 'review_notes'");
+            }
+            if (! is_string($reviewNotes) || trim($reviewNotes) === '') {
+                throw $this->error($where, "'review_notes' must be text");
+            }
+        }
+
+        $reviewer = $ticket['reviewer'] ?? null;
+        if ($reviewer !== null) {
+            if ($type === TicketType::Review->value) {
+                throw $this->error($where, "a ticket of type 'review' cannot have a 'reviewer'");
+            }
+            if (! is_string($reviewer) || Colleague::tryFrom($reviewer) === null) {
+                throw $this->error($where, 'unknown reviewer '.(is_string($reviewer) ? "'{$reviewer}'" : json_encode($reviewer)));
+            }
+        }
+
         return [
             'key' => $key,
             'day' => $day,
@@ -209,7 +246,44 @@ class ScenarioImporter
             'released_at_start' => $released,
             // Always present, so removing the issues from the file also removes them here.
             'planted_issues' => $planted,
+            'review_notes' => $reviewNotes,
+            'reviewer' => $reviewer,
         ];
+    }
+
+    /**
+     * What each colleague privately knows: colleague value => text.
+     *
+     * @param  array<array-key, mixed>  $data
+     * @return array<string, string>|null
+     */
+    private function validateColleagueNotes(array $data, string $where): ?array
+    {
+        if (! array_key_exists('colleague_notes', $data) || $data['colleague_notes'] === null) {
+            return null;
+        }
+
+        $notes = $data['colleague_notes'];
+        if (! is_array($notes) || ($notes !== [] && array_is_list($notes))) {
+            throw $this->error($where, "'colleague_notes' must be an object with a text per colleague");
+        }
+
+        $result = [];
+
+        foreach ($notes as $name => $text) {
+            $name = (string) $name;
+
+            if (Colleague::tryFrom($name) === null) {
+                throw $this->error($where, "'colleague_notes' has unknown colleague '{$name}'");
+            }
+            if (! is_string($text) || trim($text) === '') {
+                throw $this->error($where, "'colleague_notes' for '{$name}' must be text");
+            }
+
+            $result[$name] = $text;
+        }
+
+        return $result === [] ? null : $result;
     }
 
     /**
@@ -504,7 +578,7 @@ class ScenarioImporter
     }
 
     /**
-     * @param  array{slug: string, title: string, level: string, summary: string|null, duration_days: int, tickets: list<array<string, mixed>>, events: list<array<string, mixed>>}  $data
+     * @param  array{slug: string, title: string, level: string, summary: string|null, duration_days: int, sequence: int|null, briefing: string|null, colleague_notes: array<string, string>|null, tickets: list<array<string, mixed>>, events: list<array<string, mixed>>}  $data
      */
     private function store(array $data): Scenario
     {
@@ -515,6 +589,9 @@ class ScenarioImporter
                 'level' => $data['level'],
                 'summary' => $data['summary'],
                 'duration_days' => $data['duration_days'],
+                'sequence' => $data['sequence'],
+                'briefing' => $data['briefing'],
+                'colleague_notes' => $data['colleague_notes'],
             ],
         );
 

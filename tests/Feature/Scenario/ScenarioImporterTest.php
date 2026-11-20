@@ -185,6 +185,36 @@ class ScenarioImporterTest extends TestCase
         app(ScenarioImporter::class)->importFile($this->directory.'/missing.json');
     }
 
+    public function test_the_sequence_is_stored_and_removed_again(): void
+    {
+        $importer = app(ScenarioImporter::class);
+
+        $this->assertNull($importer->importFile($this->write($this->scenarioData()))->sequence);
+
+        $scenario = $importer->importFile($this->write($this->scenarioData(['sequence' => 3])));
+        $this->assertSame(3, $scenario->sequence);
+        $this->assertSame(3, Scenario::sole()->sequence);
+
+        $importer->importFile($this->write($this->scenarioData()));
+        $this->assertNull(Scenario::sole()->sequence);
+    }
+
+    public function test_two_scenarios_may_share_a_level_and_sequence(): void
+    {
+        $importer = app(ScenarioImporter::class);
+        $importer->importFile($this->write($this->scenarioData(['sequence' => 1]), 'one.json'));
+        $importer->importFile($this->write($this->scenarioData(['sequence' => 1, 'slug' => 'other']), 'two.json'));
+
+        $this->assertSame(2, Scenario::where('sequence', 1)->count());
+    }
+
+    public function test_an_invalid_sequence_is_refused(): void
+    {
+        foreach ([0, -1, 1.5, '2', true, []] as $value) {
+            $this->assertImportFails($this->scenarioData(['sequence' => $value]), "'sequence' must be a whole number of at least 1");
+        }
+    }
+
     public function test_required_scenario_fields_are_checked(): void
     {
         foreach (['slug', 'title', 'level', 'duration_days', 'tickets'] as $field) {
@@ -522,5 +552,80 @@ class ScenarioImporterTest extends TestCase
             $this->pullRequestScenario(['files' => [['path' => 'a.php', 'content' => 'x'], ['path' => 'a.php', 'content' => 'y']]]),
             "duplicate path 'a.php'",
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function guidedScenario(): array
+    {
+        $data = $this->scenarioData([
+            'briefing' => 'The app is a monolith.',
+            'colleague_notes' => ['claire' => 'The client wants a weekly export.', 'emily' => 'Check the observers.'],
+        ]);
+        $data['tickets'][0]['review_notes'] = 'A good solution adds a guard.';
+        $data['tickets'][0]['reviewer'] = 'emily';
+
+        return $data;
+    }
+
+    public function test_the_guidance_fields_are_stored(): void
+    {
+        $scenario = app(ScenarioImporter::class)->importFile($this->write($this->guidedScenario()));
+
+        $this->assertSame('The app is a monolith.', $scenario->briefing);
+        $this->assertSame(['claire' => 'The client wants a weekly export.', 'emily' => 'Check the observers.'], $scenario->colleague_notes);
+
+        $first = ScenarioTicket::where('key', 'WK-1')->sole();
+        $this->assertSame('A good solution adds a guard.', $first->review_notes);
+        $this->assertSame(Colleague::Emily, $first->reviewer);
+
+        $second = ScenarioTicket::where('key', 'WK-2')->sole();
+        $this->assertNull($second->review_notes);
+        $this->assertNull($second->reviewer);
+    }
+
+    public function test_removing_the_guidance_from_the_file_sets_it_to_null(): void
+    {
+        $importer = app(ScenarioImporter::class);
+        $importer->importFile($this->write($this->guidedScenario()));
+
+        $scenario = $importer->importFile($this->write($this->scenarioData()));
+
+        $this->assertNull($scenario->fresh()->briefing);
+        $this->assertNull($scenario->fresh()->colleague_notes);
+        $first = ScenarioTicket::where('key', 'WK-1')->sole();
+        $this->assertNull($first->review_notes);
+        $this->assertNull($first->reviewer);
+    }
+
+    public function test_the_guidance_fields_are_validated(): void
+    {
+        $this->assertImportFails($this->scenarioData(['briefing' => ['text']]), "'briefing' must be text");
+        $this->assertImportFails($this->scenarioData(['colleague_notes' => ['bob' => 'Hi']]), "unknown colleague 'bob'");
+        $this->assertImportFails($this->scenarioData(['colleague_notes' => ['claire' => ['a']]]), "'colleague_notes' for 'claire' must be text");
+        $this->assertImportFails($this->scenarioData(['colleague_notes' => ['claire' => ' ']]), "'colleague_notes' for 'claire' must be text");
+        $this->assertImportFails($this->scenarioData(['colleague_notes' => 'text']), "'colleague_notes' must be an object");
+
+        $data = $this->scenarioData();
+        $data['tickets'][0]['review_notes'] = ['a'];
+        $this->assertImportFails($data, "'review_notes' must be text");
+
+        $data = $this->scenarioData();
+        $data['tickets'][0]['reviewer'] = 'bob';
+        $this->assertImportFails($data, "unknown reviewer 'bob'");
+    }
+
+    public function test_a_review_ticket_cannot_have_review_notes_or_a_reviewer(): void
+    {
+        $data = $this->scenarioData();
+        $data['tickets'][0]['type'] = 'review';
+        $data['tickets'][0]['review_notes'] = 'Notes.';
+        $this->assertImportFails($data, "a ticket of type 'review' cannot have 'review_notes'");
+
+        $data = $this->scenarioData();
+        $data['tickets'][0]['type'] = 'review';
+        $data['tickets'][0]['reviewer'] = 'emily';
+        $this->assertImportFails($data, "a ticket of type 'review' cannot have a 'reviewer'");
     }
 }

@@ -8,8 +8,10 @@ use App\Enums\Colleague;
 use App\Enums\PullRequestState;
 use App\Enums\ReviewStatus;
 use App\Enums\ReviewVerdict;
+use App\Enums\TicketType;
 use App\Models\PullRequest;
 use App\Models\Review;
+use App\Models\Ticket;
 use App\Services\Ai\Budget;
 use App\Services\Ai\UsageRecorder;
 use App\Services\GitHub\GitHubApp;
@@ -31,7 +33,7 @@ class PullRequestReviewService
         private readonly UsageRecorder $usage,
     ) {}
 
-    public function review(PullRequest $pullRequest, string $headSha, Colleague $colleague = Colleague::Sarah): ?Review
+    public function review(PullRequest $pullRequest, string $headSha, ?Colleague $colleague = null): ?Review
     {
         if (! config('sprintlab.ai.enabled')) {
             return null;
@@ -49,6 +51,15 @@ class PullRequestReviewService
         if ($installation->suspended_at !== null) {
             return null;
         }
+
+        $ticket = $this->linkedTicket($pullRequest);
+
+        // A colleague's pull request that the user reviews: nobody reviews it for them.
+        if ($ticket?->type === TicketType::Review) {
+            return null;
+        }
+
+        $colleague ??= $ticket?->scenarioTicket->reviewer ?? Colleague::Sarah;
 
         $review = Review::firstOrCreate(
             ['pull_request_id' => $pullRequest->id, 'head_sha' => $headSha, 'colleague' => $colleague],
@@ -85,7 +96,7 @@ class PullRequestReviewService
             // The model's answer is saved before posting. If posting fails, the
             // retry reuses it instead of paying for a second answer.
             if ($review->verdict === null) {
-                $this->writeReview($review, $pullRequest, $diff, $colleague);
+                $this->writeReview($review, $pullRequest, $diff, $colleague, $ticket);
             }
 
             $this->post($client, $review, $pullRequest, $diff, $colleague);
@@ -101,10 +112,28 @@ class PullRequestReviewService
         return $review;
     }
 
-    private function writeReview(Review $review, PullRequest $pullRequest, DiffSummary $diff, Colleague $colleague): void
+    /**
+     * The ticket this pull request belongs to, if it is linked to one.
+     */
+    private function linkedTicket(PullRequest $pullRequest): ?Ticket
     {
-        $response = PullRequestReviewer::make(colleague: $colleague)->prompt(
-            $this->prompt($pullRequest, $diff),
+        return Ticket::query()
+            ->with(['scenarioTicket', 'sprint.scenario'])
+            ->where('pull_request_id', $pullRequest->id)
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    private function writeReview(Review $review, PullRequest $pullRequest, DiffSummary $diff, Colleague $colleague, ?Ticket $ticket): void
+    {
+        $scenario = $ticket?->sprint->scenario;
+
+        $response = PullRequestReviewer::make(
+            colleague: $colleague,
+            level: $scenario->level ?? 'junior',
+            briefing: $scenario?->briefing,
+        )->prompt(
+            $this->prompt($pullRequest, $diff, $ticket),
             provider: Lab::Anthropic,
             model: (string) config('sprintlab.ai.review_model'),
         );
@@ -182,11 +211,11 @@ class PullRequestReviewService
      * What the reviewer gets to read. The author's GitHub username is left
      * out on purpose: the privacy page promises it is not sent to the AI.
      */
-    private function prompt(PullRequest $pullRequest, DiffSummary $diff): string
+    private function prompt(PullRequest $pullRequest, DiffSummary $diff, ?Ticket $ticket): string
     {
         $description = trim((string) $pullRequest->body) !== '' ? trim((string) $pullRequest->body) : '(no description)';
 
-        $prompt = <<<TEXT
+        $prompt = $this->ticketBlock($ticket)."\n\n".<<<TEXT
         Pull request #{$pullRequest->number}: {$pullRequest->title}
         Branch: {$pullRequest->head_ref} into {$pullRequest->base_ref}
 
@@ -202,7 +231,75 @@ class PullRequestReviewService
             $prompt .= "\n\nThe diff was cut off because it is too long. Mention in your summary that you only looked at the first part.";
         }
 
-        return $prompt;
+        return $prompt.$this->earlierReviewBlock($pullRequest);
+    }
+
+    /**
+     * What a colleague said about an older commit of this pull request. A
+     * second review that forgot the first would repeat itself or contradict it.
+     */
+    private function earlierReviewBlock(PullRequest $pullRequest): string
+    {
+        $earlier = Review::query()
+            ->where('pull_request_id', $pullRequest->id)
+            ->where('head_sha', '!=', $pullRequest->head_sha)
+            ->where('status', ReviewStatus::Posted)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($earlier === null) {
+            return '';
+        }
+
+        $verdict = str_replace('_', ' ', ($earlier->verdict ?? ReviewVerdict::Comment)->value);
+
+        $remarks = collect((array) $earlier->comments)
+            ->map(fn (mixed $comment): string => '- '.data_get($comment, 'path').': '.Str::limit((string) data_get($comment, 'body'), 400))
+            ->implode("\n");
+
+        $block = "\n\nThis pull request was reviewed before, on an older commit, by {$earlier->colleague->displayName()}. The verdict was \"{$verdict}\" with this summary:\n{$earlier->summary}";
+
+        if ($remarks !== '') {
+            $block .= "\n\nRemarks on lines at the time:\n{$remarks}";
+        }
+
+        return $block."\n\nThe diff above is the pull request as it is now. Check first whether the earlier remarks were dealt with. Say so when they were, do not repeat a remark that was fixed, and name what is still open.";
+    }
+
+    /**
+     * The assignment: the ticket as it stands now, with the criteria added during the sprint.
+     */
+    private function ticketBlock(?Ticket $ticket): string
+    {
+        if ($ticket === null) {
+            return 'This pull request is not linked to a ticket on the board. Ask the author which ticket it belongs to: the ticket key belongs in the branch name or in the title.';
+        }
+
+        $criteria = collect($ticket->acceptance_criteria)
+            ->map(fn (string $criterion): string => '- '.$criterion)
+            ->implode("\n");
+
+        if ($criteria === '') {
+            $criteria = '- (none)';
+        }
+
+        $block = <<<TEXT
+        Ticket {$ticket->key}: {$ticket->title}
+        Type: {$ticket->type->value}. Reported by {$ticket->reporter->displayName()}.
+
+        {$ticket->description}
+
+        Acceptance criteria as they stand now (criteria can change during a sprint; this list is the current one):
+        {$criteria}
+        TEXT;
+
+        $notes = trim((string) $ticket->scenarioTicket->review_notes);
+
+        if ($notes !== '') {
+            $block .= "\n\nNotes from the team for you as the reviewer. They are private: use them to judge the work, never quote them and never say that they exist.\n{$notes}";
+        }
+
+        return $block;
     }
 
     private function dailyLimitReached(int $installationId): bool

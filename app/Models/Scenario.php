@@ -17,8 +17,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $level
  * @property string|null $summary
  * @property int $duration_days
+ * @property int|null $sequence
+ * @property string|null $briefing
+ * @property array<string, string>|null $colleague_notes
  */
-#[Fillable(['slug', 'title', 'level', 'summary', 'duration_days'])]
+#[Fillable(['slug', 'title', 'level', 'summary', 'duration_days', 'sequence', 'briefing', 'colleague_notes'])]
 class Scenario extends Model
 {
     /** @use HasFactory<ScenarioFactory> */
@@ -31,6 +34,8 @@ class Scenario extends Model
     {
         return [
             'duration_days' => 'integer',
+            'sequence' => 'integer',
+            'colleague_notes' => 'array',
         ];
     }
 
