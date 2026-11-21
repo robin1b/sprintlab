@@ -126,13 +126,23 @@ class ScenarioEngine
             ->where('sprints.status', SprintStatus::Active->value)
             ->whereNull('tickets.pull_request_id')
             ->where('tickets.status', '!=', TicketStatus::Done->value)
-            ->get(['tickets.id as ticket_id', 'scenario_events.id as event_id']);
+            ->get(['tickets.id as ticket_id', 'scenario_events.id as event_id', 'sprint_events.fired_at as fired_at']);
+
+        $dispatched = 0;
 
         foreach ($rows as $row) {
+            // What did not work for an hour has a cause that will not pass in
+            // a minute (the app was removed, the repository is gone): from
+            // then on GitHub is only asked twice an hour.
+            if (Carbon::parse((string) $row->fired_at)->lt(now()->subHour()) && now()->minute % 30 !== 0) {
+                continue;
+            }
+
             OpenColleaguePullRequest::dispatch((int) $row->ticket_id, (int) $row->event_id);
+            $dispatched++;
         }
 
-        return $rows->count();
+        return $dispatched;
     }
 
     /**

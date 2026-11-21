@@ -88,4 +88,19 @@ class RetryPullRequestsTest extends TestCase
 
         Bus::assertDispatchedTimes(OpenColleaguePullRequest::class, 1);
     }
+
+    public function test_after_an_hour_of_failing_github_is_only_asked_twice_an_hour(): void
+    {
+        Bus::fake();
+        ['sprint' => $sprint, 'event' => $event] = $this->createPullRequestEvent();
+        $this->fireEvent($sprint, $event)->update(['fired_at' => now()->subHours(3)]);
+
+        $this->travelTo(now()->startOfHour()->addMinutes(7));
+        $this->artisan('sprintlab:tick')->assertSuccessful();
+        Bus::assertNotDispatched(OpenColleaguePullRequest::class);
+
+        $this->travelTo(now()->startOfHour()->addMinutes(30));
+        $this->artisan('sprintlab:tick')->expectsOutput('Queued 1 pull request retries.')->assertSuccessful();
+        Bus::assertDispatchedTimes(OpenColleaguePullRequest::class, 1);
+    }
 }

@@ -35,7 +35,8 @@ class ColleaguePullRequestServiceTest extends TestCase
         $branch = $this->githubRequests('POST', '/git/refs');
         $this->assertCount(1, $branch);
         $this->assertSame('refs/heads/wk-4-repair-intake', $branch[0]['ref']);
-        $this->assertSame(str_repeat('c', 40), $branch[0]['sha']);
+        // The only commit of the repository: the template.
+        $this->assertSame(str_repeat('a', 40), $branch[0]['sha']);
 
         $writes = $this->githubRequests('PUT', '/contents/app/Http/Controllers/RepairController.php');
         $this->assertCount(1, $writes);
@@ -75,6 +76,54 @@ class ColleaguePullRequestServiceTest extends TestCase
         app(ColleaguePullRequestService::class)->open($ticket, $event);
 
         $this->assertSame('Add repair intake', $this->githubRequests('PUT', '/contents/routes/repairs.php')[0]['message']);
+    }
+
+    public function test_the_branch_starts_from_the_template_commit_not_from_the_users_latest_work(): void
+    {
+        // Main has seven commits: the template and six of the user.
+        $this->fakeGitHubPullRequest(commits: 7);
+        ['user' => $user, 'ticket' => $ticket, 'event' => $event] = $this->createPullRequestEvent();
+        $this->connectRepository($user);
+
+        app(ColleaguePullRequestService::class)->open($ticket, $event);
+
+        $history = $this->githubRequests('GET', '/commits');
+        $this->assertCount(2, $history);
+        $this->assertSame('7', (string) $history[1]['page']);
+
+        // The pull request then only shows the colleague's changes, also in
+        // files the user changed in the meantime.
+        $this->assertSame(str_repeat('a', 40), $this->githubRequests('POST', '/git/refs')[0]['sha']);
+        $this->assertSame('main', $this->githubRequests('POST', '/pulls')[0]['base']);
+    }
+
+    public function test_without_an_answer_about_the_history_the_branch_starts_from_the_latest_commit(): void
+    {
+        $this->fakeGitHubPullRequest(commits: 0);
+        ['user' => $user, 'ticket' => $ticket, 'event' => $event] = $this->createPullRequestEvent();
+        $this->connectRepository($user);
+
+        $pullRequest = app(ColleaguePullRequestService::class)->open($ticket, $event);
+
+        $this->assertSame(str_repeat('c', 40), $this->githubRequests('POST', '/git/refs')[0]['sha']);
+        $this->assertNotNull($pullRequest);
+    }
+
+    public function test_a_branch_left_over_from_an_earlier_sprint_is_not_touched(): void
+    {
+        // The user plays the sprint again: the branch and its closed pull request are still there.
+        $this->fakeGitHubPullRequest(branchExists: true, closedPullRequest: true);
+        ['user' => $user, 'ticket' => $ticket, 'event' => $event] = $this->createPullRequestEvent();
+        $this->connectRepository($user);
+
+        $pullRequest = app(ColleaguePullRequestService::class)->open($ticket, $event);
+
+        $this->assertSame('refs/heads/wk-4-repair-intake-2', $this->githubRequests('POST', '/git/refs')[0]['ref']);
+        $this->assertSame('wk-4-repair-intake-2', $this->githubRequests('PUT', '/contents/routes/repairs.php')[0]['branch']);
+        $this->assertSame('wk-4-repair-intake-2', $this->githubRequests('POST', '/pulls')[0]['head']);
+        $this->assertNotNull($pullRequest);
+        $this->assertSame('wk-4-repair-intake-2', $pullRequest->head_ref);
+        $this->assertSame($pullRequest->id, $ticket->refresh()->pull_request_id);
     }
 
     public function test_an_existing_branch_is_reused(): void
@@ -249,13 +298,24 @@ class ColleaguePullRequestServiceTest extends TestCase
     public function test_the_newest_repository_that_is_not_suspended_is_used(): void
     {
         $user = User::factory()->create();
-        $older = $this->connectRepository($user);
-        $newer = $this->connectRepository($user, githubId: 7002, fullName: 'robin/other');
+        $older = $this->connectRepository($user, fullName: 'robin/first-try');
+        $newer = $this->connectRepository($user, githubId: 7002, fullName: 'robin/second-try');
         $other = User::factory()->create();
         $this->connectRepository($other, githubId: 7003, fullName: 'someone/else');
 
         $this->assertSame($newer->id, $this->startDemoSprint($user)->repository_id);
         $this->assertNotSame($older->id, $newer->id);
+    }
+
+    public function test_the_copy_of_the_template_wins_from_a_newer_repository(): void
+    {
+        config(['sprintlab.template_repository' => 'robin1b/workkit']);
+
+        $user = User::factory()->create();
+        $copy = $this->connectRepository($user, fullName: 'robin/Workkit');
+        $this->connectRepository($user, githubId: 7002, fullName: 'robin/notes');
+
+        $this->assertSame($copy->id, $this->startDemoSprint($user)->repository_id);
     }
 
     public function test_a_suspended_installation_is_not_linked_at_the_start(): void

@@ -54,7 +54,7 @@ class CheckLiveSite extends Command
         $this->checkHome($base);
         $this->checkHttpRedirect($base);
 
-        foreach (self::BLOCKED_PATHS as $path) {
+        foreach ($this->blockedPaths() as $path) {
             $this->checkBlocked($base, $path);
         }
 
@@ -63,7 +63,7 @@ class CheckLiveSite extends Command
         $main = rtrim((string) $this->option('main-domain'), '/');
 
         if ($main !== '') {
-            foreach (self::BLOCKED_PATHS as $path) {
+            foreach ($this->blockedPaths() as $path) {
                 $this->checkBlocked($main, $path);
             }
 
@@ -86,6 +86,17 @@ class CheckLiveSite extends Command
         $this->info('All '.count($this->rows).' checks passed.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * A file that does not exist answers 404 whether its folder is blocked or
+     * not, so the list also names the log file that certainly exists: today's.
+     *
+     * @return list<string>
+     */
+    private function blockedPaths(): array
+    {
+        return [...self::BLOCKED_PATHS, '/storage/logs/laravel-'.now()->format('Y-m-d').'.log'];
     }
 
     private function checkHome(string $base): void

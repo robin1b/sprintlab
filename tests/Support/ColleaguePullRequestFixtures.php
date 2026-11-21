@@ -101,18 +101,31 @@ trait ColleaguePullRequestFixtures
      * @param  bool  $branchExists  the colleague's branch is already there
      * @param  list<string>  $existingFiles  paths that already exist on that branch
      * @param  bool  $openPullRequest  an open pull request from that branch exists
+     * @param  bool  $closedPullRequest  a closed pull request from that branch exists (an earlier sprint)
+     * @param  int  $commits  how many commits main has; 0 makes GitHub fail on the question
      */
-    protected function fakeGitHubPullRequest(bool $branchExists = false, array $existingFiles = [], bool $openPullRequest = false): void
+    protected function fakeGitHubPullRequest(bool $branchExists = false, array $existingFiles = [], bool $openPullRequest = false, bool $closedPullRequest = false, int $commits = 1): void
     {
         $this->configureGitHubApp();
         $pullRequest = ['number' => 31, 'head' => ['sha' => str_repeat('b', 40)], 'user' => ['login' => 'sprintlab[bot]']];
 
-        Http::fake(function (Request $request) use ($branchExists, $existingFiles, $openPullRequest, $pullRequest) {
+        Http::fake(function (Request $request) use ($branchExists, $existingFiles, $openPullRequest, $closedPullRequest, $commits, $pullRequest) {
             $url = $request->url();
             $method = $request->method();
             $path = (string) parse_url($url, PHP_URL_PATH);
+            parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+            $head = (string) ($query['head'] ?? '');
 
             return match (true) {
+                $method === 'GET' && $path === '/repos/robin/workkit/commits' && $commits === 0 => Http::response(['message' => 'Server Error'], 500),
+                // The history of main: the oldest commit is the template (aaaa...), the newest is cccc...
+                $method === 'GET' && $path === '/repos/robin/workkit/commits' => (int) ($query['page'] ?? 1) === $commits
+                    ? Http::response([['sha' => str_repeat('a', 40)]])
+                    : Http::response([['sha' => str_repeat('c', 40)]], 200, ['Link' => '<https://api.github.com/repositories/7001/commits?sha=main&per_page=1&page=2>; rel="next", <https://api.github.com/repositories/7001/commits?sha=main&per_page=1&page='.$commits.'>; rel="last"']),
+                // A branch with a numbered name (wk-4-repair-intake-2) is always free.
+                $method === 'GET' && $path === '/repos/robin/workkit/pulls' && $head !== 'robin:wk-4-repair-intake' => Http::response([]),
+                $method === 'GET' && $path === '/repos/robin/workkit/pulls' && ($query['state'] ?? '') === 'all' => Http::response($closedPullRequest || $openPullRequest ? [$pullRequest] : []),
+                $method === 'GET' && str_starts_with($path, '/repos/robin/workkit/git/ref/heads/wk-4-repair-intake-') => Http::response(['message' => 'Not Found'], 404),
                 str_contains($url, '/access_tokens') => Http::response(['token' => 'installation-token', 'expires_at' => now()->addHour()->toIso8601String()], 201),
                 $method === 'GET' && $path === '/repos/robin/workkit' => Http::response(['default_branch' => 'main']),
                 $method === 'GET' && $path === '/repos/robin/workkit/pulls' => Http::response($openPullRequest ? [$pullRequest] : []),

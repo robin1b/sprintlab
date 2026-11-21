@@ -16,6 +16,7 @@ use DomainException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Starting, pausing and resuming a sprint, and starting its days.
@@ -150,7 +151,7 @@ class SprintService
 
     /**
      * The repository a user's sprints work in: the one they chose, when it is
-     * still connected, otherwise their newest one.
+     * still connected, otherwise their copy of the template or their newest one.
      */
     public function connectedRepositoryOf(User $user): ?Repository
     {
@@ -169,10 +170,17 @@ class SprintService
             }
         }
 
-        return Repository::query()
+        $connected = Repository::query()
             ->whereHas('installation', $usable)
             ->latest('id')
-            ->first();
+            ->get();
+
+        // Without a choice: the copy of the template (it keeps the template's
+        // name unless the user renamed it), otherwise the newest.
+        $template = Str::lower(Str::afterLast((string) config('sprintlab.template_repository'), '/'));
+
+        return $connected->first(fn (Repository $repository): bool => Str::lower(Str::afterLast($repository->full_name, '/')) === $template)
+            ?? $connected->first();
     }
 
     public function currentFor(User $user): ?Sprint

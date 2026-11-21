@@ -154,10 +154,11 @@ const link = 'underline underline-offset-4 hover:text-primary';
                     Every colleague in Sprintlab is AI (Claude, made by
                     Anthropic). None of them is a real person. To write a
                     review, a chat reply or an evaluation, Sprintlab sends the
-                    text that is needed to Anthropic: the changed code of your
-                    pull request, the messages in that chat, your review
-                    comments, your evaluation answers and your first name. Your
-                    email address and your GitHub username are not sent.
+                    text that is needed to Anthropic: the title, branch name,
+                    description and changed code of your pull request, the
+                    messages in that chat, your review comments, your evaluation
+                    answers and your first name. Your email address and your
+                    GitHub username are not sent.
                 </p>
                 <p>
                     Anthropic is based in the United States. The transfer is

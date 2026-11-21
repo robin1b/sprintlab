@@ -109,6 +109,7 @@ class EvaluationPageTest extends TestCase
         $this->get(route('sprints.evaluation.show', $sprint))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('evaluation.status', 'awaiting_answers')
+                ->where('evaluation.scores', null)
                 ->has('evaluation.questions', 3)
                 ->where('evaluation.answers', null));
     }

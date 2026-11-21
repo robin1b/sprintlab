@@ -268,8 +268,10 @@ class DemoSprintTest extends TestCase
                 ->where('evaluation.status', 'awaiting_answers')
                 ->where('evaluation.questions.0', 'Why did you guard the approval in the model?')
                 ->has('evaluation.questions', 3)
-                ->where('evaluation.scores.code_quality', 78)
-                ->where('evaluation.scores.understanding', null)
+                // The numbers come with the finished evaluation, not before the answers.
+                ->where('evaluation.scores', null)
+                ->where('evaluation.overall', null)
+                ->where('evaluation.communication_evidence', null)
                 ->where('sprint', null));
 
         // The user answers the three questions and the evaluation is written.

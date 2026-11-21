@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EvaluationStatus;
 use App\Enums\Level;
 use App\Http\Requests\Sprint\StoreEvaluationAnswersRequest;
 use App\Models\Sprint;
@@ -81,19 +82,24 @@ class SprintEvaluationController extends Controller
      */
     private function evaluationProps(SprintEvaluation $evaluation): array
     {
+        // Scores and notes belong to the finished evaluation. Before that the
+        // user still has questions to answer, and should not find the numbers
+        // in the page data first.
+        $done = $evaluation->status === EvaluationStatus::Completed;
+
         return [
             'status' => $evaluation->status->value,
             'level' => $evaluation->level->value,
             'questions' => $evaluation->questions,
             'answers' => $evaluation->answers,
-            'answer_notes' => $evaluation->answer_notes,
-            'scores' => $evaluation->scores,
-            'overall' => $evaluation->overall,
-            'passed' => $evaluation->passed,
-            'communication_evidence' => $evaluation->communication_evidence,
-            'strengths' => $evaluation->strengths,
-            'growth' => $evaluation->growth,
-            'advice' => $evaluation->advice,
+            'answer_notes' => $done ? $evaluation->answer_notes : null,
+            'scores' => $done ? $evaluation->scores : null,
+            'overall' => $done ? $evaluation->overall : null,
+            'passed' => $done ? $evaluation->passed : null,
+            'communication_evidence' => $done ? $evaluation->communication_evidence : null,
+            'strengths' => $done ? $evaluation->strengths : null,
+            'growth' => $done ? $evaluation->growth : null,
+            'advice' => $done ? $evaluation->advice : null,
             'promoted_to' => $evaluation->promoted_to === null ? null : Level::from($evaluation->promoted_to)->label(),
             'completed_at' => $evaluation->completed_at?->toIso8601String(),
         ];

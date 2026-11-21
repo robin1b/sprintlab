@@ -176,6 +176,53 @@ class InstallationClient
         return (string) $response->throw()->json('object.sha');
     }
 
+    /**
+     * The first commit of a branch: for a repository made from a template,
+     * that is the template itself. Null when it cannot be found.
+     */
+    public function rootCommitSha(string $repository, string $branch): ?string
+    {
+        $url = "{$this->apiUrl}/repos/{$repository}/commits";
+        $newest = $this->request()->get($url, ['sha' => $branch, 'per_page' => 1]);
+
+        if ($newest->failed()) {
+            return null;
+        }
+
+        // One commit per page, so the number of the last page is the number of commits.
+        if (preg_match('/[?&]page=(\d+)[^>]*>;\s*rel="last"/', (string) $newest->header('Link'), $match) !== 1) {
+            return $this->shaOrNull($newest->json('0.sha'));
+        }
+
+        $oldest = $this->request()->get($url, ['sha' => $branch, 'per_page' => 1, 'page' => (int) $match[1]]);
+
+        return $oldest->successful() ? $this->shaOrNull($oldest->json('0.sha')) : null;
+    }
+
+    /**
+     * True when a pull request from this branch exists or existed, open or closed.
+     */
+    public function hasPullRequest(string $repository, string $head): bool
+    {
+        $owner = explode('/', $repository)[0];
+
+        $batch = $this->request()
+            ->get("{$this->apiUrl}/repos/{$repository}/pulls", [
+                'head' => "{$owner}:{$head}",
+                'state' => 'all',
+                'per_page' => 1,
+            ])
+            ->throw()
+            ->json();
+
+        return is_array($batch) && $batch !== [];
+    }
+
+    private function shaOrNull(mixed $sha): ?string
+    {
+        return is_string($sha) && $sha !== '' ? $sha : null;
+    }
+
     public function createBranch(string $repository, string $branch, string $sha): void
     {
         $this->request()

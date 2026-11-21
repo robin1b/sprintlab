@@ -195,6 +195,14 @@ Extra fields of `open_pull_request`:
 - `commit_message`: optional text.
 - `files`: 1 to 20 files. Each has a relative `path` (no `..`, not in `.git`, no duplicates) and either `content` (text) or `from` (a file path inside the scenario folder). A file can be at most 100 KB. `from` files are read at import time.
 
+Each file replaces the whole file at that path. The colleague's branch starts
+from the first commit of the user's repository, which is the template. So write
+the files against the template as it is: the pull request then shows the
+colleague's changes and nothing else, also when the user changed the same file
+in an earlier ticket. When a branch with that name is left over from an earlier
+sprint in the same repository, the colleague takes the name with `-2` behind
+it.
+
 ```json
 {
     "key": "josh-pr",
