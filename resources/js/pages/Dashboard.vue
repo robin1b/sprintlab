@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm, usePage, usePoll } from '@inertiajs/vue3';
-import { Check } from '@lucide/vue';
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import ColleagueList from '@/components/ColleagueList.vue';
 import { offerFacts, offerResult } from '@/components/dashboard/offer';
 import OfferRow from '@/components/dashboard/OfferRow.vue';
+import SetupSteps from '@/components/dashboard/SetupSteps.vue';
 import EvaluationCard from '@/components/evaluation/EvaluationCard.vue';
 import LevelProgress from '@/components/evaluation/LevelProgress.vue';
 import StatusChip from '@/components/StatusChip.vue';
@@ -17,6 +17,7 @@ import type { EvaluationState, LevelProgressData } from '@/types/evaluation';
 import type {
     Colleague,
     ScenarioOffer,
+    SetupState,
     SprintOverview,
     StatusOption,
 } from '@/types/sprint';
@@ -35,6 +36,7 @@ const props = defineProps<{
         completed_at: string | null;
         evaluation: EvaluationState | null;
     } | null;
+    setup: SetupState;
     progress: LevelProgressData;
     overview: SprintOverview | null;
     team: Colleague[];
@@ -44,8 +46,8 @@ const page = usePage();
 
 // Follow the evaluation until it is done; the card shows what Sarah is doing.
 const { start, stop } = usePoll(
-    10_000,
-    { only: ['completed', 'progress'] },
+    5_000,
+    { only: ['completed', 'progress', 'setup'] },
     { autoStart: false },
 );
 const evaluationPending = computed(
@@ -54,7 +56,13 @@ const evaluationPending = computed(
         props.completed.evaluation?.status !== 'completed',
 );
 
-watch(evaluationPending, (value) => (value ? start() : stop()), {
+// While the app is not connected the page follows what GitHub reports.
+const setupPending = computed(
+    () => page.props.sprint === null && !props.setup.ready,
+);
+const polling = computed(() => evaluationPending.value || setupPending.value);
+
+watch(polling, (value) => (value ? start() : stop()), {
     immediate: true,
 });
 
@@ -103,26 +111,12 @@ function togglePause(): void {
     router.post(target.url(sprint.value.id), {}, { preserveScroll: true });
 }
 
-const steps = computed(() => [
-    { title: 'Sign in with GitHub', done: true, canStart: false },
-    {
-        title: 'Create your Workkit repository from the template',
-        done: false,
-        canStart: false,
-    },
-    {
-        title: 'Install the Sprintlab GitHub app on that repository',
-        done: false,
-        canStart: false,
-    },
-    {
-        title: props.completed
-            ? 'Start another sprint'
-            : 'Start your first sprint',
-        done: false,
-        canStart: recommended.value !== null,
-    },
-]);
+const connectHint = 'Connect your practice repository first.';
+const showSteps = ref(false);
+
+function blocked(offer: ScenarioOffer): boolean {
+    return !offer.is_demo && !props.setup.ready;
+}
 
 const statusLabels = computed(() => {
     const labels = {} as Record<string, string>;
@@ -285,6 +279,16 @@ const statusLabels = computed(() => {
 
         <template v-else>
             <section
+                v-if="!setup.ready"
+                class="rounded-md border border-border bg-card"
+            >
+                <h2 class="border-b border-border px-4 py-3 font-medium">
+                    Getting started
+                </h2>
+                <SetupSteps :setup="setup" :started="completed !== null" />
+            </section>
+
+            <section
                 v-if="recommended"
                 class="rounded-md border border-border bg-card"
             >
@@ -302,13 +306,28 @@ const statusLabels = computed(() => {
                     >
                         {{ recommended.summary }}
                     </p>
-                    <Button
-                        class="mt-4"
-                        :disabled="startForm.processing"
-                        @click="startSprint(recommended.id)"
+                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                        <Button
+                            :disabled="
+                                startForm.processing || blocked(recommended)
+                            "
+                            @click="startSprint(recommended.id)"
+                        >
+                            Start sprint
+                        </Button>
+                        <span
+                            v-if="blocked(recommended)"
+                            class="text-sm text-muted-foreground"
+                        >
+                            {{ connectHint }}
+                        </span>
+                    </div>
+                    <p
+                        v-if="startForm.errors.scenario_id"
+                        class="mt-2 text-sm text-destructive"
                     >
-                        Start sprint
-                    </Button>
+                        {{ startForm.errors.scenario_id }}
+                    </p>
                 </div>
             </section>
 
@@ -324,55 +343,37 @@ const statusLabels = computed(() => {
                         v-for="offer in others"
                         :key="offer.id"
                         :offer="offer"
-                        :disabled="startForm.processing"
+                        :disabled="startForm.processing || blocked(offer)"
+                        :hint="blocked(offer) ? connectHint : null"
                         @start="startSprint"
                     />
                 </ul>
             </section>
 
-            <section v-else class="rounded-md border border-border bg-card">
+            <section
+                v-if="setup.ready && showSteps"
+                class="rounded-md border border-border bg-card"
+            >
                 <h2 class="border-b border-border px-4 py-3 font-medium">
                     Getting started
                 </h2>
-                <ol class="divide-y divide-border">
-                    <li
-                        v-for="(step, index) in steps"
-                        :key="step.title"
-                        class="flex items-center gap-3 px-4 py-3"
-                        :class="
-                            step.done || step.canStart
-                                ? ''
-                                : 'text-muted-foreground'
-                        "
-                    >
-                        <span
-                            class="flex size-5 shrink-0 items-center justify-center rounded-sm border font-mono text-xs"
-                            :class="
-                                step.done
-                                    ? 'border-primary text-primary'
-                                    : 'border-border'
-                            "
-                        >
-                            <Check v-if="step.done" class="size-3.5" />
-                            <template v-else>{{ index + 1 }}</template>
-                        </span>
-                        <span class="flex-1">{{ step.title }}</span>
-                        <span
-                            v-if="!step.done && !step.canStart"
-                            class="rounded-sm border border-border px-1.5 font-mono text-xs"
-                        >
-                            soon
-                        </span>
-                    </li>
-                </ol>
-                <p
-                    v-if="recommended"
-                    class="border-t border-border px-4 py-3 text-sm text-muted-foreground"
-                >
-                    The GitHub connection is not live yet. You can already play
-                    a sprint by moving tickets yourself.
-                </p>
+                <SetupSteps :setup="setup" :started="completed !== null" />
             </section>
+            <p
+                v-if="setup.ready && setup.repository && !showSteps"
+                class="text-sm text-muted-foreground"
+            >
+                Repository:
+                <span class="font-mono">{{ setup.repository.full_name }}</span>
+                ·
+                <button
+                    type="button"
+                    class="text-primary hover:underline"
+                    @click="showSteps = true"
+                >
+                    change
+                </button>
+            </p>
         </template>
 
         <section class="rounded-md border border-border bg-card">

@@ -6,6 +6,7 @@ import { offerFacts, offerResult } from './offer';
 defineProps<{
     offer: ScenarioOffer;
     disabled: boolean;
+    hint?: string | null;
 }>();
 
 defineEmits<{
@@ -24,6 +25,9 @@ defineEmits<{
                 </template>
             </p>
         </div>
+        <span v-if="hint" class="text-xs text-muted-foreground">{{
+            hint
+        }}</span>
         <Button
             variant="secondary"
             size="sm"

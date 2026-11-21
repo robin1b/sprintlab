@@ -140,7 +140,7 @@
     ]
   },
   "resources/js/app.ts": {
-    "file": "assets/app-DvHskuz8.js",
+    "file": "assets/app-BiOZ8V0J.js",
     "name": "app",
     "src": "resources/js/app.ts",
     "isEntry": true,
@@ -168,7 +168,7 @@
     ]
   },
   "resources/js/pages/Board.vue": {
-    "file": "assets/Board-Bd9KeXUP.js",
+    "file": "assets/Board-mrRHJD2Y.js",
     "name": "Board",
     "src": "resources/js/pages/Board.vue",
     "isDynamicEntry": true,
@@ -183,7 +183,7 @@
     ]
   },
   "resources/js/pages/Chat.vue": {
-    "file": "assets/Chat-BA57iR9L.js",
+    "file": "assets/Chat-B5NxSlYa.js",
     "name": "Chat",
     "src": "resources/js/pages/Chat.vue",
     "isDynamicEntry": true,
@@ -197,7 +197,7 @@
     ]
   },
   "resources/js/pages/Dashboard.vue": {
-    "file": "assets/Dashboard-B74vyNuV.js",
+    "file": "assets/Dashboard-DJ9T16Vy.js",
     "name": "Dashboard",
     "src": "resources/js/pages/Dashboard.vue",
     "isDynamicEntry": true,
@@ -211,7 +211,7 @@
     ]
   },
   "resources/js/pages/ErrorPage.vue": {
-    "file": "assets/ErrorPage-v4KIm12S.js",
+    "file": "assets/ErrorPage-BzRnsgDZ.js",
     "name": "ErrorPage",
     "src": "resources/js/pages/ErrorPage.vue",
     "isDynamicEntry": true,
@@ -223,7 +223,7 @@
     ]
   },
   "resources/js/pages/Privacy.vue": {
-    "file": "assets/Privacy-BZwYcTz-.js",
+    "file": "assets/Privacy-D6WDIXZ0.js",
     "name": "Privacy",
     "src": "resources/js/pages/Privacy.vue",
     "isDynamicEntry": true,
@@ -234,7 +234,7 @@
     ]
   },
   "resources/js/pages/Welcome.vue": {
-    "file": "assets/Welcome-B1REQLQe.js",
+    "file": "assets/Welcome-8uBZO-QD.js",
     "name": "Welcome",
     "src": "resources/js/pages/Welcome.vue",
     "isDynamicEntry": true,
@@ -246,7 +246,7 @@
     ]
   },
   "resources/js/pages/admin/Usage.vue": {
-    "file": "assets/Usage-CMbAsuIV.js",
+    "file": "assets/Usage-B8D54Vpa.js",
     "name": "Usage",
     "src": "resources/js/pages/admin/Usage.vue",
     "isDynamicEntry": true,
@@ -266,7 +266,7 @@
     ]
   },
   "resources/js/pages/settings/Profile.vue": {
-    "file": "assets/Profile-Dj2SxDhX.js",
+    "file": "assets/Profile-D7qzy9X_.js",
     "name": "Profile",
     "src": "resources/js/pages/settings/Profile.vue",
     "isDynamicEntry": true,

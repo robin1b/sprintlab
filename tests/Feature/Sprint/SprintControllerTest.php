@@ -7,11 +7,13 @@ use App\Models\Scenario;
 use App\Models\Sprint;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\GitHubFixtures;
 use Tests\Support\SprintFixtures;
 use Tests\TestCase;
 
 class SprintControllerTest extends TestCase
 {
+    use GitHubFixtures;
     use RefreshDatabase;
     use SprintFixtures;
 
@@ -44,6 +46,7 @@ class SprintControllerTest extends TestCase
         $track = Scenario::factory()->create(['level' => 'junior', 'sequence' => 1]);
         $demo = Scenario::factory()->create(['level' => 'senior', 'sequence' => null]);
         $user = User::factory()->create(['level' => 'junior']);
+        $this->giveRepository($user);
 
         $this->actingAs($user)->post(route('sprints.store'), ['scenario_id' => $track->id])->assertRedirect(route('board'));
         $this->assertSame($track->id, $user->sprints()->sole()->scenario_id);
@@ -51,6 +54,25 @@ class SprintControllerTest extends TestCase
         $other = User::factory()->create(['level' => 'junior']);
         $this->actingAs($other)->post(route('sprints.store'), ['scenario_id' => $demo->id])->assertRedirect(route('board'));
         $this->assertSame($demo->id, $other->sprints()->sole()->scenario_id);
+    }
+
+    public function test_a_track_sprint_needs_a_connected_repository_but_the_demo_does_not()
+    {
+        $track = Scenario::factory()->create(['level' => 'junior', 'sequence' => 1]);
+        $demo = Scenario::factory()->create(['level' => 'junior', 'sequence' => null]);
+        $user = User::factory()->create(['level' => 'junior']);
+
+        $this->actingAs($user)
+            ->post(route('sprints.store'), ['scenario_id' => $track->id])
+            ->assertSessionHasErrors(['scenario_id' => 'Connect your practice repository first.']);
+        $this->assertSame(0, $user->sprints()->count());
+
+        $this->giveRepository($user, suspended: true);
+        $this->post(route('sprints.store'), ['scenario_id' => $track->id])
+            ->assertSessionHasErrors(['scenario_id' => 'Connect your practice repository first.']);
+
+        $this->post(route('sprints.store'), ['scenario_id' => $demo->id])->assertRedirect(route('board'));
+        $this->assertSame($demo->id, $user->sprints()->sole()->scenario_id);
     }
 
     public function test_a_junior_cannot_start_a_medior_track_scenario()

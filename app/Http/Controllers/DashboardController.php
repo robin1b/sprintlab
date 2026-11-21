@@ -11,6 +11,7 @@ use App\Models\Sprint;
 use App\Models\SprintEvaluation;
 use App\Models\User;
 use App\Services\Evaluation\SprintEvaluationService;
+use App\Services\GitHub\Onboarding;
 use App\Services\Sprint\SprintService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -22,6 +23,7 @@ class DashboardController extends Controller
     public function __construct(
         private readonly SprintService $sprints,
         private readonly SprintEvaluationService $evaluations,
+        private readonly Onboarding $onboarding,
     ) {}
 
     public function __invoke(Request $request): Response
@@ -49,6 +51,7 @@ class DashboardController extends Controller
             'scenarios' => $offers['scenarios'],
             'recommended_id' => $offers['recommended_id'],
             'completed' => $completed,
+            'setup' => $this->onboarding->stateFor($user),
             'progress' => $this->evaluations->progressFor($user),
             'overview' => $sprint === null ? null : $this->overview($sprint),
             'team' => collect(Colleague::cases())->map(fn (Colleague $colleague) => [

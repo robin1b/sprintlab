@@ -38,6 +38,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Practice repository
+    |--------------------------------------------------------------------------
+    |
+    | The public GitHub template (owner/name) that learners create their own
+    | practice repository from.
+    |
+    */
+
+    'template_repository' => env('SPRINTLAB_TEMPLATE_REPOSITORY', 'robin1b/workkit'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Evaluation after a sprint
     |--------------------------------------------------------------------------
     |

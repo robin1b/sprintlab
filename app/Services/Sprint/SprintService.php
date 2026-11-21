@@ -13,6 +13,7 @@ use App\Models\Sprint;
 use App\Models\User;
 use App\Services\Scenario\ScenarioEngine;
 use DomainException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -147,12 +148,29 @@ class SprintService
         return $repository;
     }
 
-    private function connectedRepositoryOf(User $user): ?Repository
+    /**
+     * The repository a user's sprints work in: the one they chose, when it is
+     * still connected, otherwise their newest one.
+     */
+    public function connectedRepositoryOf(User $user): ?Repository
     {
+        $usable = fn (Builder $installations) => $installations
+            ->where('user_id', $user->id)
+            ->whereNull('suspended_at');
+
+        if ($user->practice_repository_id !== null) {
+            $chosen = Repository::query()
+                ->whereKey($user->practice_repository_id)
+                ->whereHas('installation', $usable)
+                ->first();
+
+            if ($chosen !== null) {
+                return $chosen;
+            }
+        }
+
         return Repository::query()
-            ->whereHas('installation', function ($installations) use ($user): void {
-                $installations->where('user_id', $user->id)->whereNull('suspended_at');
-            })
+            ->whereHas('installation', $usable)
             ->latest('id')
             ->first();
     }

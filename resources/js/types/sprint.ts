@@ -74,3 +74,22 @@ export type ChatMessage = {
     created_at: string;
     ticket_key: string | null;
 };
+
+export type SetupRepository = {
+    id: number;
+    full_name: string;
+    private: boolean;
+    url: string;
+};
+
+// Where the user stands on the way to a first sprint.
+export type SetupState = {
+    template_repository: string;
+    template_url: string;
+    install_url: string | null;
+    installed: boolean;
+    suspended: boolean;
+    repositories: SetupRepository[];
+    repository: SetupRepository | null;
+    ready: boolean;
+};

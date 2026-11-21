@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\GitHub\Onboarding;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +15,8 @@ use Throwable;
 
 class GitHubController extends Controller
 {
+    public function __construct(private readonly Onboarding $onboarding) {}
+
     /**
      * Send the visitor to GitHub to authorize.
      */
@@ -40,6 +43,7 @@ class GitHubController extends Controller
         }
 
         $user = $this->syncUser($githubUser);
+        $this->onboarding->linkInstallationsOf($user);
 
         Auth::login($user, remember: true);
         $request->session()->regenerate();

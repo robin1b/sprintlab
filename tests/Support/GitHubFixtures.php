@@ -128,4 +128,25 @@ trait GitHubFixtures
 
         return openssl_pkey_get_details($keyPair)['key'];
     }
+
+    /**
+     * Give a user an installation with one repository (not suspended unless asked).
+     */
+    protected function giveRepository(User $user, string $fullName = 'robin/workkit', bool $suspended = false, ?GitHubInstallation $installation = null): Repository
+    {
+        $installation ??= GitHubInstallation::create([
+            'installation_id' => random_int(100_000, 999_999_999),
+            'user_id' => $user->id,
+            'account_login' => 'robin',
+            'account_id' => $user->github_id,
+            'suspended_at' => $suspended ? now() : null,
+        ]);
+
+        return Repository::create([
+            'github_id' => random_int(100_000, 999_999_999),
+            'github_installation_id' => $installation->id,
+            'full_name' => $fullName,
+            'private' => false,
+        ]);
+    }
 }
