@@ -14,7 +14,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { board, chat, dashboard } from '@/routes';
+import { board, chat, dashboard, privacy } from '@/routes';
 import { usage } from '@/routes/admin';
 import type { NavItem } from '@/types';
 
@@ -62,6 +62,12 @@ const adminNavItems = computed<NavItem[]>(() => [
 
         <SidebarFooter>
             <NavUser />
+            <Link
+                :href="privacy()"
+                class="px-2 pb-1 font-mono text-xs text-muted-foreground group-data-[collapsible=icon]:hidden hover:text-foreground"
+            >
+                Privacy
+            </Link>
         </SidebarFooter>
     </Sidebar>
     <slot />

@@ -38,6 +38,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Content Security Policy
+    |--------------------------------------------------------------------------
+    |
+    | With SPRINTLAB_CSP_REPORT_ONLY=true the browser only reports what the
+    | policy would block, it blocks nothing. An emergency switch for when a
+    | page turns blank because of the policy.
+    |
+    */
+
+    'csp_report_only' => (bool) env('SPRINTLAB_CSP_REPORT_ONLY', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Practice repository
     |--------------------------------------------------------------------------
     |

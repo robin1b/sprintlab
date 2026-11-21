@@ -173,6 +173,50 @@ class HardeningTest extends TestCase
         $this->get('https://localhost/privacy')->assertHeader('Strict-Transport-Security', 'max-age=31536000');
     }
 
+    public function test_every_response_carries_a_content_security_policy_with_the_nonce_of_the_page(): void
+    {
+        $page = $this->get('/privacy')->assertOk();
+        $policy = (string) $page->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("default-src 'self'", $policy);
+        $this->assertStringContainsString("frame-ancestors 'none'", $policy);
+        $this->assertStringContainsString('https://avatars.githubusercontent.com', $policy);
+        $this->assertStringNotContainsString('unsafe-eval', $policy);
+        $this->assertNull($page->headers->get('Content-Security-Policy-Report-Only'));
+
+        preg_match("~script-src 'self' 'nonce-([^']+)'~", $policy, $match);
+        $this->assertNotEmpty($match[1] ?? null, 'The policy has no nonce.');
+
+        // Every executable script of the page carries that nonce. The Inertia
+        // data is JSON, which the browser does not run.
+        preg_match_all('~<script\b[^>]*>~', $page->getContent(), $tags);
+        $executable = array_filter($tags[0], fn (string $tag): bool => ! str_contains($tag, 'application/json'));
+
+        $this->assertNotEmpty($executable);
+
+        foreach ($executable as $tag) {
+            $this->assertStringContainsString('nonce="'.$match[1].'"', $tag);
+        }
+    }
+
+    public function test_the_error_page_has_the_policy_and_every_request_gets_a_new_nonce(): void
+    {
+        $first = (string) $this->get('/does-not-exist')->assertHeader('Content-Security-Policy')->headers->get('Content-Security-Policy');
+        $second = (string) $this->get('/does-not-exist')->headers->get('Content-Security-Policy');
+
+        $this->assertNotSame($first, $second);
+    }
+
+    public function test_the_report_only_switch_sends_the_same_policy_under_the_other_header(): void
+    {
+        config(['sprintlab.csp_report_only' => true]);
+
+        $response = $this->get('/privacy');
+
+        $response->assertHeaderMissing('Content-Security-Policy');
+        $this->assertStringContainsString("script-src 'self' 'nonce-", (string) $response->headers->get('Content-Security-Policy-Report-Only'));
+    }
+
     /**
      * Would the server refuse this path? A model of the rules in .htaccess:
      * FilesMatch looks at the file name, RedirectMatch at the full address

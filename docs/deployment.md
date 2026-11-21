@@ -175,7 +175,21 @@ a colleague's pull request go in the same folder, as the scenario describes.
 
 ## Checks after going live
 
-Open these in a browser. Each one must give "403 Forbidden" or "404 Not
+The quickest way is one command, on your own computer in the project folder:
+
+```
+php artisan sprintlab:check-live
+php artisan sprintlab:check-live --main-domain=https://robinbroos.com/sprintlab
+```
+
+It does the same as the list of addresses below and more: it also checks the
+security headers, the redirect from `http://` to `https://` and `/up`. It
+prints a table with OK or FAIL per check and ends with an error when anything
+fails. The first line checks `APP_URL` of your local `.env`, so set that to
+the live address first or give the address after the command. With
+`--main-domain` it also checks the same files through the main domain.
+
+Or open these in a browser by hand. Each one must give "403 Forbidden" or "404 Not
 Found", never the content of a file:
 
 ```
@@ -224,6 +238,7 @@ deployment.
 | `Failed at step 2: sprintlab:import-scenarios: …`                         | A scenario file is not valid; the message names the file and the reason. Fix or remove the file.                                                                                                                      |
 | Every page gives "400 Bad Request"                                        | `APP_URL` in `.env` is not the address in the browser.                                                                                                                                                                |
 | Signing in with GitHub ends on an error page from GitHub                  | The callback URL in the GitHub App is not `APP_URL` + `/auth/github/callback`, or `GITHUB_REDIRECT_URI` differs from it.                                                                                              |
+| A page is blank and the browser console mentions Content Security Policy  | The policy blocks something. Set `SPRINTLAB_CSP_REPORT_ONLY=true` in `.env` (works at once, the browser then only reports), then report which address was blocked (the console names it).                             |
 | A page looks unstyled or a new page is blank                              | The build was not committed. Locally: `npm run build`, commit `public/build`, merge, Deploy.                                                                                                                          |
 | Reviews or chat replies never arrive                                      | The cron job is the queue. Check that it still runs (admin page → Deployment, `deploy.log`), then `ANTHROPIC_API_KEY`, `SPRINTLAB_AI_ENABLED` and the budget on the admin page.                                       |
 | An error page of Sprintlab ("Something went wrong")                       | The details are in `storage/logs/laravel-YYYY-MM-DD.log`.                                                                                                                                                             |
