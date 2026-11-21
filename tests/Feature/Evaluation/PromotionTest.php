@@ -5,6 +5,7 @@ namespace Tests\Feature\Evaluation;
 use App\Enums\Level;
 use App\Enums\TicketStatus;
 use App\Models\Message;
+use App\Models\Scenario;
 use App\Models\Sprint;
 use App\Models\SprintEvaluation;
 use App\Models\User;
@@ -47,9 +48,37 @@ class PromotionTest extends TestCase
     {
         for ($i = 0; $i < $count; $i++) {
             SprintEvaluation::factory()->completed($passed, $level)->create([
-                'sprint_id' => Sprint::factory()->completed()->for($user),
+                'sprint_id' => Sprint::factory()->completed()->for($user)->for(Scenario::factory()->state(['sequence' => $i + 1])),
             ]);
         }
+    }
+
+    public function test_a_demo_does_not_count_towards_a_promotion(): void
+    {
+        $user = User::factory()->create(['name' => 'Robin Broos']);
+        $this->passedBefore($user, 2, Level::Junior);
+
+        // A passed sprint of a scenario outside the track.
+        SprintEvaluation::factory()->completed(true, Level::Junior)->create([
+            'sprint_id' => Sprint::factory()->completed()->for($user)->for(Scenario::factory()->state(['sequence' => null])),
+        ]);
+
+        $this->assertSame(2, app(SprintEvaluationService::class)->progressFor($user)['passed']);
+        $this->assertSame(Level::Junior, $user->refresh()->level);
+    }
+
+    public function test_passing_the_same_sprint_again_counts_once(): void
+    {
+        $user = User::factory()->create(['name' => 'Robin Broos']);
+        $scenario = Scenario::factory()->create(['sequence' => 1]);
+
+        foreach (range(1, 4) as $ignored) {
+            SprintEvaluation::factory()->completed(true, Level::Junior)->create([
+                'sprint_id' => Sprint::factory()->completed()->for($user)->for($scenario),
+            ]);
+        }
+
+        $this->assertSame(1, app(SprintEvaluationService::class)->progressFor($user)['passed']);
     }
 
     public function test_the_user_is_promoted_after_the_configured_number_of_passed_sprints(): void

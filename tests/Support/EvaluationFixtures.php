@@ -30,13 +30,16 @@ trait EvaluationFixtures
 {
     private int $evaluationCounter = 0;
 
+    private int $trackCounter = 0;
+
     /**
      * A completed sprint, finished before its deadline unless told otherwise.
      */
     protected function completedSprint(?User $user = null, bool $inTime = true): Sprint
     {
         $user ??= User::factory()->create(['name' => 'Robin Broos']);
-        $scenario = Scenario::factory()->create(['title' => 'Lease approvals', 'level' => 'junior']);
+        // A sprint of the track: only those count towards a promotion.
+        $scenario = Scenario::factory()->create(['title' => 'Lease approvals', 'level' => 'junior', 'sequence' => ++$this->trackCounter]);
 
         return Sprint::factory()->for($user)->for($scenario)->completed()->create([
             'started_at' => Carbon::now()->subDays(3),

@@ -294,14 +294,23 @@ class SprintEvaluationService
         return $next;
     }
 
+    /**
+     * How many different sprints of the track the user passed at their level.
+     * A demo is practice and does not count; passing the same sprint a second
+     * time does not count twice.
+     */
     private function passedAtCurrentLevel(User $user): int
     {
         return SprintEvaluation::query()
-            ->where('status', EvaluationStatus::Completed)
-            ->where('passed', true)
-            ->where('level', $user->level)
-            ->whereHas('sprint', fn ($sprints) => $sprints->where('user_id', $user->id))
-            ->count();
+            ->join('sprints', 'sprints.id', '=', 'sprint_evaluations.sprint_id')
+            ->join('scenarios', 'scenarios.id', '=', 'sprints.scenario_id')
+            ->where('sprint_evaluations.status', EvaluationStatus::Completed->value)
+            ->where('sprint_evaluations.passed', true)
+            ->where('sprint_evaluations.level', $user->level->value)
+            ->where('sprints.user_id', $user->id)
+            ->whereNotNull('scenarios.sequence')
+            ->distinct()
+            ->count('sprints.scenario_id');
     }
 
     private function aiAllowed(): bool
