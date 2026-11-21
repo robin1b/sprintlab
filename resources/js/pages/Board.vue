@@ -75,12 +75,19 @@ function onDrop(status: TicketStatus): void {
             class="rounded-md border border-warning px-3 py-2 text-sm text-warning"
         >
             The sprint is paused, so tickets cannot be moved.
-            <Link :href="dashboard()" class="underline">Resume it</Link>
+            <Link
+                :href="dashboard()"
+                class="rounded-sm underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                >Resume it</Link
+            >
             on the overview.
         </p>
         <p v-else-if="!hasSprint" class="text-muted-foreground">
             Tickets appear here when your first sprint starts.
-            <Link :href="dashboard()" class="text-primary hover:underline">
+            <Link
+                :href="dashboard()"
+                class="rounded-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            >
                 Go to the overview
             </Link>
         </p>
@@ -113,6 +120,12 @@ function onDrop(status: TicketStatus): void {
                     </span>
                 </h2>
                 <div class="flex flex-1 flex-col gap-2 p-2">
+                    <p
+                        v-if="column.tickets.length === 0 && hasSprint"
+                        class="px-1 py-2 text-xs text-muted-foreground"
+                    >
+                        No tickets in {{ column.label.toLowerCase() }}.
+                    </p>
                     <TicketCard
                         v-for="ticket in column.tickets"
                         :key="ticket.id"

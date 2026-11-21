@@ -22,6 +22,14 @@ withDefaults(defineProps<Props>(), {
 // shows again when it happens again.
 const page = usePage();
 
+// A plain #main link would also change the address; focus the element instead.
+function focusMain(): void {
+    const main = document.getElementById('main');
+
+    main?.focus();
+    main?.scrollIntoView();
+}
+
 watch(
     () => page.props.flash,
     (flash) => {
@@ -34,8 +42,20 @@ watch(
 
 <template>
     <AppShell>
+        <!-- First focusable element: visible on focus only. -->
+        <a
+            href="#main"
+            class="fixed top-2 left-2 z-50 -translate-y-20 rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground focus:translate-y-0 focus:ring-2 focus:ring-ring focus:outline-none"
+            @click.prevent="focusMain"
+        >
+            Skip to content
+        </a>
         <AppSidebar />
-        <AppContent class="min-w-0 overflow-x-clip">
+        <AppContent
+            id="main"
+            tabindex="-1"
+            class="min-w-0 overflow-x-clip focus:outline-none"
+        >
             <AppSidebarHeader :breadcrumbs="breadcrumbs" />
             <slot />
         </AppContent>

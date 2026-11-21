@@ -32,9 +32,11 @@ class SprintEvaluationController extends Controller
     public function show(Request $request, Sprint $sprint): Response
     {
         Gate::authorize('evaluate', $sprint);
-        abort_unless($sprint->isCompleted(), 404);
 
-        $evaluation = SprintEvaluation::query()->where('sprint_id', $sprint->id)->first();
+        // A sprint that is still running has no evaluation yet: the page says so.
+        $evaluation = $sprint->isCompleted()
+            ? SprintEvaluation::query()->where('sprint_id', $sprint->id)->first()
+            : null;
         $weights = (array) config('sprintlab.evaluation.weights');
 
         return Inertia::render('sprints/Evaluation', [
@@ -44,6 +46,7 @@ class SprintEvaluationController extends Controller
                 'scenario_title' => $sprint->scenario->title,
                 'completed_at' => $sprint->completed_at?->toIso8601String(),
             ],
+            'finished' => $sprint->isCompleted(),
             'evaluation' => $evaluation === null ? null : $this->evaluationProps($evaluation),
             'areas' => array_map(fn (string $key): array => [
                 'key' => $key,

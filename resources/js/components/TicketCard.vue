@@ -60,7 +60,7 @@ function onDragStart(event: DragEvent): void {
                         class="relative z-10 -my-1 -mr-1 size-7"
                         :aria-label="`Move ${ticket.key}`"
                     >
-                        <MoreHorizontal class="size-4" />
+                        <MoreHorizontal class="size-4" aria-hidden="true" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -82,7 +82,7 @@ function onDragStart(event: DragEvent): void {
         <!-- The ::after layer makes the whole card clickable. -->
         <button
             type="button"
-            class="text-left text-sm font-medium outline-none after:absolute after:inset-0 after:content-['']"
+            class="text-left text-sm font-medium outline-none after:absolute after:inset-0 after:rounded-md after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-ring"
             @click="emit('open')"
         >
             {{ ticket.title }}
@@ -91,6 +91,8 @@ function onDragStart(event: DragEvent): void {
         <div class="flex items-center justify-between gap-2">
             <span
                 class="flex size-6 items-center justify-center rounded-md border border-border bg-secondary font-mono text-[10px]"
+                role="img"
+                :aria-label="`Reported by ${ticket.reporter.name}, ${ticket.reporter.role}`"
                 :title="`${ticket.reporter.name}, ${ticket.reporter.role}`"
             >
                 {{ ticket.reporter.name.slice(0, 2).toUpperCase() }}
@@ -100,9 +102,10 @@ function onDragStart(event: DragEvent): void {
                 :href="ticket.pull_request.url"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="relative z-10 font-mono text-xs text-primary hover:underline"
+                class="relative z-10 rounded-sm font-mono text-xs text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
                 PR #{{ ticket.pull_request.number }}
+                <span class="sr-only">(opens GitHub in a new tab)</span>
             </a>
         </div>
     </article>

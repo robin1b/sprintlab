@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Head, usePoll } from '@inertiajs/vue3';
+import { Head, Link, usePoll } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
 import AnswersForm from '@/components/evaluation/AnswersForm.vue';
 import EvaluationResult from '@/components/evaluation/EvaluationResult.vue';
 import LevelProgress from '@/components/evaluation/LevelProgress.vue';
-import { dashboard } from '@/routes';
+import { board, dashboard } from '@/routes';
 import type {
     Evaluation,
     EvaluationArea,
@@ -26,6 +26,7 @@ const props = defineProps<{
         scenario_title: string;
         completed_at: string | null;
     };
+    finished: boolean;
     evaluation: Evaluation | null;
     areas: EvaluationArea[];
     pass_score: number;
@@ -46,7 +47,11 @@ const { start, stop } = usePoll(
     { autoStart: false },
 );
 
-watch(waiting, (value) => (value ? start() : stop()), { immediate: true });
+watch(
+    () => props.finished && waiting.value,
+    (value) => (value ? start() : stop()),
+    { immediate: true },
+);
 </script>
 
 <template>
@@ -61,7 +66,21 @@ watch(waiting, (value) => (value ? start() : stop()), { immediate: true });
         </div>
 
         <p
-            v-if="status === 'preparing'"
+            v-if="!finished"
+            class="rounded-md border border-border bg-card px-4 py-3 text-muted-foreground"
+        >
+            This sprint is not finished yet. Your evaluation appears here when
+            you complete it.
+            <Link
+                :href="board()"
+                class="rounded-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            >
+                Back to the board
+            </Link>
+        </p>
+
+        <p
+            v-else-if="status === 'preparing'"
             class="rounded-md border border-border bg-card px-4 py-3 text-muted-foreground"
         >
             Sarah is preparing your evaluation. This usually takes a minute or

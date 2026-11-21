@@ -174,6 +174,9 @@ function saveRepository(): void {
                             @click="installClicked = true"
                         >
                             Install the app
+                            <span class="sr-only"
+                                >(opens GitHub in a new tab)</span
+                            >
                         </a>
                     </Button>
                     <p v-else class="mt-2 text-sm text-muted-foreground">
@@ -198,7 +201,7 @@ function saveRepository(): void {
                         </span>
                         <select
                             v-model="repositoryForm.repository_id"
-                            class="h-8 rounded-md border border-input bg-background px-2 font-mono text-sm"
+                            class="h-8 rounded-md border border-input bg-background px-2 font-mono text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                         >
                             <option
                                 v-for="repository in setup.repositories"

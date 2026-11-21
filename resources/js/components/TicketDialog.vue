@@ -93,8 +93,12 @@ async function copyBranch(branch: string): Promise<void> {
                         aria-label="Copy branch name"
                         @click="copyBranch(ticket.suggested_branch)"
                     >
-                        <Check v-if="copied" class="size-4" />
-                        <Copy v-else class="size-4" />
+                        <Check
+                            v-if="copied"
+                            class="size-4"
+                            aria-hidden="true"
+                        />
+                        <Copy v-else class="size-4" aria-hidden="true" />
                     </Button>
                 </div>
                 <p class="mt-2 text-xs text-muted-foreground">

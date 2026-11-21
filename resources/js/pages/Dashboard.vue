@@ -204,7 +204,7 @@ const statusLabels = computed(() => {
                     <h2 class="font-medium">Today's tickets</h2>
                     <Link
                         :href="board()"
-                        class="text-sm text-primary hover:underline"
+                        class="rounded-sm text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     >
                         Open board
                     </Link>
@@ -242,7 +242,7 @@ const statusLabels = computed(() => {
                     <h2 class="font-medium">Latest messages</h2>
                     <Link
                         :href="chat()"
-                        class="text-sm text-primary hover:underline"
+                        class="rounded-sm text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     >
                         Open chat
                     </Link>
@@ -368,7 +368,7 @@ const statusLabels = computed(() => {
                 ·
                 <button
                     type="button"
-                    class="text-primary hover:underline"
+                    class="rounded-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     @click="showSteps = true"
                 >
                     change

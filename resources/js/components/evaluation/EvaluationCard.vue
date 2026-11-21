@@ -32,7 +32,7 @@ const status = computed(() => props.evaluation?.status ?? 'preparing');
                 </p>
                 <Link
                     :href="evaluation.url"
-                    class="text-sm text-primary hover:underline"
+                    class="rounded-sm text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 >
                     View your evaluation
                 </Link>

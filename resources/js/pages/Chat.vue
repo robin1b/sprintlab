@@ -84,7 +84,7 @@ watch(
                         :href="chat(colleague.key)"
                         preserve-scroll
                         preserve-state
-                        class="flex items-center gap-3 border-l-2 px-4 py-3 hover:bg-accent"
+                        class="flex items-center gap-3 border-l-2 px-4 py-3 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
                         :class="
                             hasSprint && colleague.key === selected
                                 ? 'border-primary bg-accent'
@@ -105,9 +105,13 @@ watch(
                                 <span
                                     v-if="colleague.unread > 0"
                                     class="rounded-sm border border-primary px-1.5 font-mono text-xs text-primary"
-                                    :aria-label="`${colleague.unread} unread`"
                                 >
-                                    {{ colleague.unread }}
+                                    <span aria-hidden="true">{{
+                                        colleague.unread
+                                    }}</span>
+                                    <span class="sr-only">
+                                        {{ colleague.unread }} unread
+                                    </span>
                                 </span>
                             </p>
                             <p class="truncate text-xs text-muted-foreground">
@@ -133,7 +137,10 @@ watch(
             <p class="max-w-xs text-center text-muted-foreground">
                 No messages yet. Your team will reach out when your sprint
                 starts.
-                <Link :href="dashboard()" class="text-primary hover:underline">
+                <Link
+                    :href="dashboard()"
+                    class="rounded-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                >
                     Start one on the overview.
                 </Link>
             </p>
@@ -149,10 +156,10 @@ watch(
             >
                 <button
                     type="button"
-                    class="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground md:hidden"
+                    class="flex items-center gap-1 rounded-sm text-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none md:hidden"
                     @click="showConversation = false"
                 >
-                    <ArrowLeft class="size-4" />
+                    <ArrowLeft class="size-4" aria-hidden="true" />
                     Colleagues
                 </button>
                 <p v-if="current" class="font-medium">
@@ -165,7 +172,15 @@ watch(
                 </p>
             </header>
 
-            <div ref="scroller" class="min-h-0 flex-1 overflow-y-auto">
+            <!-- Only the conversation announces new messages, not the page. -->
+            <div
+                ref="scroller"
+                class="min-h-0 flex-1 overflow-y-auto"
+                aria-live="polite"
+                aria-relevant="additions"
+                :aria-label="`Conversation with ${current?.name ?? 'your colleague'}`"
+                role="log"
+            >
                 <p
                     v-if="messages.length === 0"
                     class="p-6 text-center text-muted-foreground"

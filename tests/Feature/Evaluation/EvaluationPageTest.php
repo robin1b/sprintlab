@@ -50,12 +50,18 @@ class EvaluationPageTest extends TestCase
         $this->post(route('sprints.evaluation.answers', $sprint), ['answers' => ['a', 'b', 'c']])->assertForbidden();
     }
 
-    public function test_a_sprint_that_is_not_completed_is_not_found(): void
+    public function test_a_sprint_that_is_not_completed_says_so_and_cannot_be_answered(): void
     {
         $sprint = Sprint::factory()->create();
         $this->actingAs($sprint->user);
 
-        $this->get(route('sprints.evaluation.show', $sprint))->assertNotFound();
+        $this->get(route('sprints.evaluation.show', $sprint))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('sprints/Evaluation')
+                ->where('finished', false)
+                ->where('evaluation', null)
+                ->where('evaluated_sprint.completed_at', null));
         $this->post(route('sprints.evaluation.answers', $sprint), ['answers' => ['a', 'b', 'c']])->assertNotFound();
     }
 
