@@ -22,11 +22,12 @@ use Illuminate\Support\Carbon;
  * @property string|null $avatar_url
  * @property Level $level
  * @property int|null $practice_repository_id
+ * @property list<string>|null $tours_done
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['github_id', 'github_username', 'name', 'email', 'avatar_url', 'practice_repository_id'])]
+#[Fillable(['github_id', 'github_username', 'name', 'email', 'avatar_url', 'practice_repository_id', 'tours_done'])]
 #[Hidden(['remember_token'])]
 class User extends Authenticatable
 {
@@ -44,6 +45,7 @@ class User extends Authenticatable
             'github_id' => 'integer',
             'practice_repository_id' => 'integer',
             'level' => Level::class,
+            'tours_done' => 'array',
         ];
     }
 

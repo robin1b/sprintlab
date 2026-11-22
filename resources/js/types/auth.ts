@@ -1,3 +1,5 @@
+export type TourPart = 'overview' | 'board' | 'chat';
+
 export type User = {
     id: number;
     name: string;
@@ -6,6 +8,8 @@ export type User = {
     avatar?: string;
     level: string;
     level_label: string;
+    /** Parts of the guided tour the user finished or skipped. */
+    tours_done: TourPart[];
     [key: string]: unknown;
 };
 

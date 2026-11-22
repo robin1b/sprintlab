@@ -21,6 +21,8 @@ class Onboarding
      *     install_url: string|null,
      *     installed: bool,
      *     suspended: bool,
+     *     all_repositories: bool,
+     *     configure_url: string|null,
      *     repositories: list<array{id: int, full_name: string, private: bool, url: string}>,
      *     repository: array{id: int, full_name: string, private: bool, url: string}|null,
      *     ready: bool
@@ -42,6 +44,7 @@ class Onboarding
             ->all());
 
         $repository = $this->sprints->connectedRepositoryOf($user);
+        $first = $active->first();
 
         return [
             'template_repository' => $template,
@@ -49,6 +52,8 @@ class Onboarding
             'install_url' => $slug === '' ? null : "https://github.com/apps/{$slug}/installations/new",
             'installed' => $active->isNotEmpty(),
             'suspended' => $installations->isNotEmpty() && $active->isEmpty(),
+            'all_repositories' => $active->contains('repository_selection', 'all'),
+            'configure_url' => $first === null ? null : "https://github.com/settings/installations/{$first->installation_id}",
             'repositories' => $repositories,
             'repository' => $repository === null ? null : $this->present($repository),
             'ready' => $repository !== null,

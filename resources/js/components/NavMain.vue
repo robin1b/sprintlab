@@ -35,7 +35,7 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                     :tooltip="item.title"
                     class="relative text-muted-foreground hover:bg-sidebar-accent hover:text-foreground data-[active=true]:bg-transparent data-[active=true]:font-normal data-[active=true]:text-foreground data-[active=true]:before:absolute data-[active=true]:before:top-1 data-[active=true]:before:bottom-1 data-[active=true]:before:left-0 data-[active=true]:before:w-0.5 data-[active=true]:before:rounded-r-sm data-[active=true]:before:bg-primary"
                 >
-                    <Link :href="item.href">
+                    <Link :href="item.href" :data-tour="item.tour">
                         <component :is="item.icon" />
                         <span>{{ item.title }}</span>
                     </Link>

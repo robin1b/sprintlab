@@ -12,4 +12,6 @@ export type NavItem = {
     icon?: LucideIcon;
     isActive?: boolean;
     badge?: number;
+    /** Value of the data-tour anchor for the guided tour. */
+    tour?: string;
 };

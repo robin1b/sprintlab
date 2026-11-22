@@ -106,7 +106,10 @@ const link = 'underline underline-offset-4 hover:text-primary';
                         its pull requests: titles, descriptions, the changed
                         code and the review comments. The app only has access to
                         the repositories you choose, and you can remove it at
-                        any time in your GitHub settings.
+                        any time in your GitHub settings. Sprintlab only looks
+                        at your practice repository. If the app can see more
+                        repositories, Sprintlab ignores what happens in the
+                        others and stores nothing about them.
                     </li>
                     <li>
                         <strong>Your work in a sprint.</strong> The tickets you

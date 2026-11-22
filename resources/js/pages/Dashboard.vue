@@ -8,11 +8,14 @@ import SetupSteps from '@/components/dashboard/SetupSteps.vue';
 import EvaluationCard from '@/components/evaluation/EvaluationCard.vue';
 import LevelProgress from '@/components/evaluation/LevelProgress.vue';
 import StatusChip from '@/components/StatusChip.vue';
+import GuidedTour from '@/components/tour/GuidedTour.vue';
 import { Button } from '@/components/ui/button';
+import { useTour } from '@/composables/useTour';
 import { useNow } from '@/composables/useNow';
 import { deadlineInWords, formatMessageTime } from '@/lib/time';
 import { board, chat, dashboard } from '@/routes';
 import { pause, resume, store } from '@/routes/sprints';
+import { tours } from '@/tours';
 import type { EvaluationState, LevelProgressData } from '@/types/evaluation';
 import type {
     Colleague,
@@ -64,6 +67,11 @@ const polling = computed(() => evaluationPending.value || setupPending.value);
 
 watch(polling, (value) => (value ? start() : stop()), {
     immediate: true,
+});
+
+const tour = useTour('overview', {
+    steps: tours.overview,
+    when: () => props.setup.ready,
 });
 
 const now = useNow(60_000);
@@ -149,13 +157,43 @@ const statusLabels = computed(() => {
             <LevelProgress :progress="progress" class="mt-2" />
         </div>
 
+        <section
+            v-if="setup.all_repositories"
+            class="rounded-md border border-warning bg-card px-4 py-3"
+        >
+            <h2 class="font-medium">Sprintlab can see all your repositories</h2>
+            <p class="mt-1 text-sm">
+                Sprintlab only works in your practice repository and ignores the
+                others. Still, give the app access to that one repository only.
+            </p>
+            <Button
+                v-if="setup.configure_url"
+                as-child
+                variant="secondary"
+                size="sm"
+                class="mt-3"
+            >
+                <a
+                    :href="setup.configure_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    Limit access on GitHub
+                    <span class="sr-only">(opens GitHub in a new tab)</span>
+                </a>
+            </Button>
+        </section>
+
         <EvaluationCard
             v-if="sprint === null && completed"
             :evaluation="completed.evaluation"
         />
 
         <template v-if="sprint !== null && overview !== null">
-            <section class="rounded-md border border-border bg-card">
+            <section
+                data-tour="start-sprint"
+                class="rounded-md border border-border bg-card"
+            >
                 <div
                     class="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3"
                 >
@@ -172,6 +210,16 @@ const statusLabels = computed(() => {
                                     }}
                                 </span>
                             </template>
+                        </p>
+                        <p
+                            v-if="setup.repository"
+                            data-tour="practice-repository"
+                            class="mt-1 text-xs text-muted-foreground"
+                        >
+                            Repository:
+                            <span class="font-mono">{{
+                                setup.repository.full_name
+                            }}</span>
                         </p>
                         <p v-if="paused" class="mt-1 text-sm text-warning">
                             Paused. The clock is stopped until you resume.
@@ -290,6 +338,7 @@ const statusLabels = computed(() => {
 
             <section
                 v-if="recommended"
+                data-tour="start-sprint"
                 class="rounded-md border border-border bg-card"
             >
                 <div class="px-4 py-3">
@@ -361,6 +410,7 @@ const statusLabels = computed(() => {
             </section>
             <p
                 v-if="setup.ready && setup.repository && !showSteps"
+                data-tour="practice-repository"
                 class="text-sm text-muted-foreground"
             >
                 Repository:
@@ -376,11 +426,21 @@ const statusLabels = computed(() => {
             </p>
         </template>
 
-        <section class="rounded-md border border-border bg-card">
+        <section
+            data-tour="team"
+            class="rounded-md border border-border bg-card"
+        >
             <h2 class="border-b border-border px-4 py-3 font-medium">
                 Your team
             </h2>
             <ColleagueList :colleagues="team" />
         </section>
+
+        <GuidedTour
+            :steps="tours.overview"
+            :open="tour.open.value"
+            @finish="tour.close('finish')"
+            @skip="tour.close('skip')"
+        />
     </div>
 </template>

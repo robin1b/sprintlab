@@ -166,10 +166,63 @@ function saveRepository(): void {
                     </p>
                 </template>
                 <template v-else-if="!setup.suspended">
-                    <p class="mt-1 text-sm text-muted-foreground">
-                        Choose Only select repositories and pick your new
-                        repository. Sprintlab cannot see anything else.
-                    </p>
+                    <div
+                        class="mt-2 rounded-md border border-border bg-muted/40 p-3"
+                    >
+                        <p class="text-sm">
+                            On GitHub, choose
+                            <strong class="font-medium"
+                                >Only select repositories</strong
+                            >
+                            and pick
+                            <strong class="font-mono font-medium">{{
+                                setup.repository?.full_name ??
+                                'your practice repository'
+                            }}</strong
+                            >.
+                        </p>
+                        <div
+                            aria-hidden="true"
+                            class="mt-3 max-w-md rounded-md border border-border bg-background p-3 text-sm select-none"
+                        >
+                            <div
+                                class="flex items-center gap-2 text-muted-foreground opacity-60"
+                            >
+                                <span
+                                    class="size-3.5 rounded-full border border-muted-foreground"
+                                ></span>
+                                All repositories
+                            </div>
+                            <div class="mt-2 flex items-center gap-2">
+                                <span
+                                    class="flex size-3.5 items-center justify-center rounded-full border border-primary"
+                                >
+                                    <span
+                                        class="size-2 rounded-full bg-primary"
+                                    ></span>
+                                </span>
+                                Only select repositories
+                            </div>
+                            <div class="mt-2 ml-5 flex items-center gap-2">
+                                <div
+                                    class="min-w-0 flex-1 truncate rounded-md border border-input px-2 py-1 font-mono text-xs"
+                                >
+                                    {{
+                                        setup.repository?.full_name ??
+                                        'you/workkit'
+                                    }}
+                                </div>
+                                <span
+                                    class="shrink-0 font-mono text-xs text-primary"
+                                    >← pick this one</span
+                                >
+                            </div>
+                        </div>
+                        <p class="mt-3 text-sm text-muted-foreground">
+                            Do not choose All repositories. Sprintlab only needs
+                            this one, and ignores the others.
+                        </p>
+                    </div>
                     <Button
                         v-if="setup.install_url"
                         as-child

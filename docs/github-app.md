@@ -74,6 +74,13 @@ base64 -w0 sprintlab.private-key.pem      # on macOS: base64 -i sprintlab.privat
 
 ## What happens when
 
+Sprintlab only acts on the practice repository: the repository of the current
+sprint, or the chosen practice repository. Events from other repositories the
+app can see are ignored and not stored. When the app can see all repositories,
+the dashboard warns about it and links to the GitHub page
+(`https://github.com/settings/installations/{id}`) where the user limits it.
+The choice (`all` or `selected`) is kept in `github_installations.repository_selection`.
+
 | GitHub event                                                                         | Sprintlab does                                                                                                                                                                                                                                                                              |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `installation` created                                                               | stores the installation and its repositories, links it to the user with that GitHub account (when the user signs up later, sign-in links it)                                                                                                                                                |

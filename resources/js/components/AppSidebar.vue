@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { Gauge, KanbanSquare, LayoutGrid, MessageSquare } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
@@ -16,20 +16,28 @@ import {
 } from '@/components/ui/sidebar';
 import { board, chat, dashboard, privacy } from '@/routes';
 import { usage } from '@/routes/admin';
+import { restart } from '@/routes/tour';
 import type { NavItem } from '@/types';
 
 const page = usePage();
 
 const mainNavItems = computed<NavItem[]>(() => [
     { title: 'Overview', href: dashboard(), icon: LayoutGrid },
-    { title: 'Board', href: board(), icon: KanbanSquare },
+    { title: 'Board', href: board(), icon: KanbanSquare, tour: 'nav-board' },
     {
         title: 'Chat',
         href: chat(),
         icon: MessageSquare,
         badge: page.props.unreadMessages,
+        tour: 'nav-chat',
     },
 ]);
+
+function replayTour(): void {
+    router.delete(restart.url(), {
+        onSuccess: () => router.visit(dashboard({ query: { tour: 1 } }).url),
+    });
+}
 
 const adminNavItems = computed<NavItem[]>(() => [
     { title: 'AI usage', href: usage(), icon: Gauge },
@@ -68,6 +76,13 @@ const adminNavItems = computed<NavItem[]>(() => [
             >
                 Privacy
             </Link>
+            <button
+                type="button"
+                class="px-2 pb-1 text-left font-mono text-xs text-muted-foreground group-data-[collapsible=icon]:hidden hover:text-foreground"
+                @click="replayTour"
+            >
+                Replay the tour
+            </button>
         </SidebarFooter>
     </Sidebar>
     <slot />

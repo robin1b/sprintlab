@@ -6,6 +6,7 @@ use App\Enums\ScenarioTrigger;
 use App\Enums\SprintStatus;
 use App\Enums\TicketStatus;
 use App\Jobs\ReplyToChatMessage;
+use App\Models\GitHubInstallation;
 use App\Models\Message;
 use App\Models\Repository;
 use App\Models\Scenario;
@@ -179,8 +180,17 @@ class SprintService
         // name unless the user renamed it), otherwise the newest.
         $template = Str::lower(Str::afterLast((string) config('sprintlab.template_repository'), '/'));
 
-        return $connected->first(fn (Repository $repository): bool => Str::lower(Str::afterLast($repository->full_name, '/')) === $template)
-            ?? $connected->first();
+        $named = $connected->first(fn (Repository $repository): bool => Str::lower(Str::afterLast($repository->full_name, '/')) === $template);
+
+        // With "All repositories" the newest one can be any repository of the
+        // user, so they have to pick one.
+        $seesEverything = GitHubInstallation::query()
+            ->where('user_id', $user->id)
+            ->whereNull('suspended_at')
+            ->where('repository_selection', 'all')
+            ->exists();
+
+        return $named ?? ($seesEverything ? null : $connected->first());
     }
 
     public function currentFor(User $user): ?Sprint

@@ -3,9 +3,12 @@ import { Head, Link, usePage, usePoll } from '@inertiajs/vue3';
 import { ArrowLeft } from '@lucide/vue';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import ChatComposer from '@/components/chat/ChatComposer.vue';
+import GuidedTour from '@/components/tour/GuidedTour.vue';
+import { useTour } from '@/composables/useTour';
 import { useNow } from '@/composables/useNow';
 import { formatMessageTime } from '@/lib/time';
 import { chat, dashboard } from '@/routes';
+import { tours } from '@/tours';
 import type { ChatColleague, ChatMessage } from '@/types/sprint';
 
 defineOptions({
@@ -40,6 +43,11 @@ const page = usePage();
 const hasSprint = computed(() => page.props.sprint !== null);
 const now = useNow(60_000);
 
+const tour = useTour('chat', {
+    steps: tours.chat,
+    when: () => hasSprint.value,
+});
+
 const current = computed(
     () => props.colleagues.find((c) => c.key === props.selected) ?? null,
 );
@@ -70,6 +78,7 @@ watch(
 
     <div class="flex h-[calc(100svh-3rem)] min-h-0 flex-1">
         <aside
+            data-tour="chat-colleagues"
             class="min-h-0 w-full flex-col overflow-y-auto border-border bg-card md:flex md:w-72 md:shrink-0 md:border-r"
             :class="showConversation ? 'hidden' : 'flex'"
         >
@@ -251,5 +260,12 @@ watch(
                 {{ send_blocked_reason }}
             </p>
         </section>
+
+        <GuidedTour
+            :steps="tours.chat"
+            :open="tour.open.value"
+            @finish="tour.close('finish')"
+            @skip="tour.close('skip')"
+        />
     </div>
 </template>

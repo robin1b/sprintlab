@@ -16,6 +16,8 @@ const props = defineProps<{
     statuses: StatusOption[];
     // True when the sprint is paused: the card can be read, not moved.
     locked: boolean;
+    // The first card on the board carries the guided tour anchor.
+    first?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -38,6 +40,7 @@ function onDragStart(event: DragEvent): void {
 
 <template>
     <article
+        :data-tour="first ? 'ticket-card' : undefined"
         class="relative flex flex-col gap-2 rounded-md border border-border bg-background p-3 focus-within:border-ring"
         :class="locked ? '' : 'cursor-grab active:cursor-grabbing'"
         :draggable="!locked"
