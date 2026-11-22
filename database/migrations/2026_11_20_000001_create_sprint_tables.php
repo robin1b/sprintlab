@@ -61,8 +61,8 @@ return new class extends Migration
             $table->foreignId('scenario_id')->constrained();
             $table->string('status');
             $table->unsignedTinyInteger('current_day')->default(1);
-            $table->timestamp('started_at');
-            $table->timestamp('deadline_at');
+            $table->dateTime('started_at');
+            $table->dateTime('deadline_at');
             $table->timestamp('paused_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
@@ -109,7 +109,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('sprint_id')->constrained()->cascadeOnDelete();
             $table->foreignId('scenario_event_id')->constrained()->cascadeOnDelete();
-            $table->timestamp('due_at');
+            $table->dateTime('due_at');
             $table->timestamp('fired_at')->nullable();
             $table->timestamps();
 

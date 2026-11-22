@@ -203,6 +203,12 @@ const link = 'underline underline-offset-4 hover:text-primary';
                     services such as Google Analytics or Google Fonts. That is
                     why you see no cookie banner.
                 </p>
+                <p>
+                    When you finish or skip the intro video on the home page,
+                    your browser remembers that with one entry in its local
+                    storage, so the video does not start again. The entry says
+                    nothing about you and is never sent to Sprintlab.
+                </p>
 
                 <h2>How long data is kept</h2>
                 <ul>

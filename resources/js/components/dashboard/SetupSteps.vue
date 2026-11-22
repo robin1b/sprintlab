@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import { Check } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
+import { home } from '@/routes';
 import { update } from '@/routes/practice-repository';
 import type { SetupState } from '@/types/sprint';
 
@@ -48,6 +49,15 @@ function saveRepository(): void {
 
 <template>
     <ol class="divide-y divide-border">
+        <li class="px-4 py-2 text-sm">
+            <Link
+                :href="home({ query: { intro: 1 } })"
+                class="text-muted-foreground hover:text-foreground hover:underline"
+            >
+                Watch the intro video
+            </Link>
+        </li>
+
         <li class="flex gap-3 px-4 py-3">
             <span
                 class="flex size-5 shrink-0 items-center justify-center rounded-sm border border-primary font-mono text-xs text-primary"

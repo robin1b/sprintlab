@@ -116,7 +116,7 @@
     "src": "node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-vietnamese-wght-normal.woff2"
   },
   "resources/css/app.css": {
-    "file": "assets/app-Bk_em2Y4.css",
+    "file": "assets/app-DKKS9fH4.css",
     "name": "app",
     "names": [
       "app.css"
@@ -140,7 +140,7 @@
     ]
   },
   "resources/js/app.ts": {
-    "file": "assets/app-CI3udqee.js",
+    "file": "assets/app-DlxCGJh-.js",
     "name": "app",
     "src": "resources/js/app.ts",
     "isEntry": true,
@@ -168,7 +168,7 @@
     ]
   },
   "resources/js/pages/Board.vue": {
-    "file": "assets/Board-vhS4zEku.js",
+    "file": "assets/Board-CDxQTjPG.js",
     "name": "Board",
     "src": "resources/js/pages/Board.vue",
     "isDynamicEntry": true,
@@ -183,7 +183,7 @@
     ]
   },
   "resources/js/pages/Chat.vue": {
-    "file": "assets/Chat-BRCpIpQT.js",
+    "file": "assets/Chat-DbRZ9qi5.js",
     "name": "Chat",
     "src": "resources/js/pages/Chat.vue",
     "isDynamicEntry": true,
@@ -197,7 +197,7 @@
     ]
   },
   "resources/js/pages/Dashboard.vue": {
-    "file": "assets/Dashboard-a58HbWtX.js",
+    "file": "assets/Dashboard-PRUCFb7u.js",
     "name": "Dashboard",
     "src": "resources/js/pages/Dashboard.vue",
     "isDynamicEntry": true,
@@ -211,7 +211,7 @@
     ]
   },
   "resources/js/pages/ErrorPage.vue": {
-    "file": "assets/ErrorPage-CrbOglZL.js",
+    "file": "assets/ErrorPage-Gi4lukAP.js",
     "name": "ErrorPage",
     "src": "resources/js/pages/ErrorPage.vue",
     "isDynamicEntry": true,
@@ -223,7 +223,7 @@
     ]
   },
   "resources/js/pages/Privacy.vue": {
-    "file": "assets/Privacy-B0SsUOcv.js",
+    "file": "assets/Privacy-D6BJFND2.js",
     "name": "Privacy",
     "src": "resources/js/pages/Privacy.vue",
     "isDynamicEntry": true,
@@ -234,7 +234,7 @@
     ]
   },
   "resources/js/pages/Welcome.vue": {
-    "file": "assets/Welcome-B-Xkpbi9.js",
+    "file": "assets/Welcome-9UE1AqJ9.js",
     "name": "Welcome",
     "src": "resources/js/pages/Welcome.vue",
     "isDynamicEntry": true,
@@ -243,10 +243,15 @@
       "_button-2m2sfmMh.js",
       "_routes-vH1iFIRv.js",
       "resources/js/app.ts"
+    ],
+    "assets": [
+      "assets/intro-OflGv53D.vtt",
+      "assets/intro-poster-ZVYBfgkb.jpg",
+      "assets/intro-CjsdRqoq.mp4"
     ]
   },
   "resources/js/pages/admin/Usage.vue": {
-    "file": "assets/Usage-DX01g4Tv.js",
+    "file": "assets/Usage-D3wL9HAS.js",
     "name": "Usage",
     "src": "resources/js/pages/admin/Usage.vue",
     "isDynamicEntry": true,
@@ -266,7 +271,7 @@
     ]
   },
   "resources/js/pages/settings/Profile.vue": {
-    "file": "assets/Profile-Bp61Jm4N.js",
+    "file": "assets/Profile-BqZLPcE0.js",
     "name": "Profile",
     "src": "resources/js/pages/settings/Profile.vue",
     "isDynamicEntry": true,
@@ -291,5 +296,17 @@
       "_InputError-BkA3K8od.js",
       "_evaluation-VCiIPj7w.js"
     ]
+  },
+  "resources/media/intro-poster.jpg": {
+    "file": "assets/intro-poster-ZVYBfgkb.jpg",
+    "src": "resources/media/intro-poster.jpg"
+  },
+  "resources/media/intro.mp4": {
+    "file": "assets/intro-CjsdRqoq.mp4",
+    "src": "resources/media/intro.mp4"
+  },
+  "resources/media/intro.vtt": {
+    "file": "assets/intro-OflGv53D.vtt",
+    "src": "resources/media/intro.vtt"
   }
 }
