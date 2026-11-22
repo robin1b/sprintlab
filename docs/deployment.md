@@ -14,11 +14,16 @@ the first time and what to do when something fails.
       very first run when `vendor/` does not exist yet. This happens _before_
       Laravel starts, because Laravel cannot start without its packages
       (`App\Support\Deploy\PackageInstaller`, plain PHP);
+    - then runs `site:deploy`: when the migrations, the scenarios, the build
+      or the packages changed, it runs `migrate --force`,
+      `sprintlab:import-scenarios` and `optimize:clear`. Nothing changed: it
+      stops at once. A lock file (`storage/app/private/deploy.lock`) keeps two
+      runs from deploying at the same time. This step comes before the
+      scheduler, because the scheduler keeps its bookkeeping in the cache, and
+      with `CACHE_STORE=database` the cache table only exists after the first
+      migration;
     - then starts Laravel's scheduler (`artisan schedule:run`).
 3. **The scheduler** (`routes/console.php`) runs every minute:
-    - `site:deploy`: when the migrations, the scenarios, the build or the
-      packages changed, it runs `migrate --force`, `sprintlab:import-scenarios`
-      and `optimize:clear`. Nothing changed: it stops at once;
     - `queue:work --stop-when-empty`: webhooks, AI reviews, chat replies;
     - `sprintlab:tick`: scenario events with a delay;
     - `model:prune` (daily): removes old webhook messages.

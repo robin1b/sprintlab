@@ -8,8 +8,11 @@
  * 1. Installs the Composer packages when composer.lock changed (or on the very
  *    first run, when vendor/ does not exist yet). This works before Laravel can
  *    start, so a host without SSH never needs a manual `composer install`.
- * 2. Starts Laravel's scheduler, which empties the queue, fires sprint events
- *    and finishes a deployment (`site:deploy`: migrations, scenarios, caches).
+ * 2. Finishes a deployment (`site:deploy`: migrations, scenarios, caches). This
+ *    runs before the scheduler, because the scheduler keeps its own bookkeeping
+ *    in the cache, and on a fresh install the cache table only exists after
+ *    the migrations.
+ * 3. Starts Laravel's scheduler, which empties the queue and fires sprint events.
  *
  * See docs/deployment.md.
  */
@@ -41,6 +44,27 @@ if ($result['message'] !== null) {
 // Another run is installing right now, or there is no vendor/ to start Laravel with.
 if ($result['status'] === PackageInstaller::BUSY || ! $installer->canBoot()) {
     exit($result['status'] === PackageInstaller::FAILED ? 1 : 0);
+}
+
+// One deployment at a time: a run that finds the lock taken skips this step.
+$lockPath = $root.'/storage/app/private/deploy.lock';
+@mkdir(dirname($lockPath), 0775, true);
+$lock = @fopen($lockPath, 'c');
+
+if ($lock !== false && flock($lock, LOCK_EX | LOCK_NB)) {
+    $log = $root.'/storage/logs/deploy.log';
+    $process = proc_open(
+        [PHP_BINARY, $root.'/artisan', 'site:deploy'],
+        [1 => ['file', $log, 'a'], 2 => ['file', $log, 'a']],
+        $pipes,
+        $root,
+    );
+
+    if (is_resource($process)) {
+        proc_close($process);
+    }
+
+    flock($lock, LOCK_UN);
 }
 
 $_SERVER['argv'] = $argv = ['artisan', 'schedule:run'];

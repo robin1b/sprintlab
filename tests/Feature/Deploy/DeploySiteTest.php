@@ -120,14 +120,29 @@ class DeploySiteTest extends TestCase
         $this->assertTrue(DeploySite::state()['ok']);
     }
 
-    public function test_the_scheduler_runs_the_deploy_the_queue_the_sprint_events_and_the_cleanup(): void
+    public function test_the_scheduler_runs_the_queue_the_sprint_events_and_the_cleanup(): void
     {
         $this->artisan('schedule:list')
-            ->expectsOutputToContain('site:deploy')
             ->expectsOutputToContain('queue:work')
             ->expectsOutputToContain('sprintlab:tick')
             ->expectsOutputToContain('model:prune')
+            ->doesntExpectOutputToContain('site:deploy')
             ->assertSuccessful();
+    }
+
+    public function test_the_cron_script_deploys_before_it_starts_the_scheduler(): void
+    {
+        // On a fresh install the cache table only exists after the migrations,
+        // and the scheduler reads the cache before it runs anything.
+        $script = (string) file_get_contents(base_path('scripts/cron.php'));
+
+        $deploy = strpos($script, "'site:deploy'");
+        $scheduler = strpos($script, "'schedule:run'");
+
+        $this->assertNotFalse($deploy);
+        $this->assertNotFalse($scheduler);
+        $this->assertLessThan($scheduler, $deploy);
+        $this->assertStringContainsString('LOCK_EX | LOCK_NB', $script);
     }
 
     public function test_the_admin_page_shows_the_last_deployment(): void

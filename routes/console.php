@@ -20,12 +20,9 @@ Schedule::command('sprintlab:tick')
     ->everyMinute()
     ->withoutOverlapping(5);
 
-// Finishes a deployment: the host only copies the files of a new version.
-// Migrations, scenarios and caches follow here (see docs/deployment.md).
-Schedule::command('site:deploy')
-    ->everyMinute()
-    ->withoutOverlapping(30)
-    ->appendOutputTo(storage_path('logs/deploy.log'));
+// site:deploy is not scheduled here: scripts/cron.php runs it every minute,
+// before the scheduler, so a fresh install has its tables before the
+// scheduler needs the cache (see docs/deployment.md).
 
 // Removes what is only kept for a while, such as old webhook messages from
 // GitHub (promised on the privacy page).
