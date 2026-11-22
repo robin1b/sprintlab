@@ -1,5 +1,6 @@
 import type { Directive } from 'vue';
 import type { Auth } from '@/types/auth';
+import type { SprintSummary } from '@/types/sprint';
 
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
@@ -19,6 +20,9 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
+            flash: { error: string | null; success: string | null };
+            sprint: SprintSummary | null;
+            unreadMessages: number;
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

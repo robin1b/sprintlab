@@ -1,5 +1,4 @@
 import { createInertiaApp } from '@inertiajs/vue3';
-import { initializeTheme } from '@/composables/useAppearance';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
@@ -11,7 +10,8 @@ void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {
-            case name === 'Welcome':
+            // Public pages and the error page stand on their own, without the app shell.
+            case ['Welcome', 'Privacy', 'ErrorPage'].includes(name):
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
@@ -31,12 +31,9 @@ void createInertiaApp({
         });
     },
     progress: {
-        color: '#4B5563',
+        color: '#4cc38a',
     },
 });
-
-// This will set light / dark mode on page load...
-initializeTheme();
 
 // This will listen for flash toast data from the server...
 initializeFlashToast();

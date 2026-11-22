@@ -4,14 +4,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useInitials } from '@/composables/useInitials';
 import type { User } from '@/types';
 
-type Props = {
-    user: User;
-    showEmail?: boolean;
-};
-
-const props = withDefaults(defineProps<Props>(), {
-    showEmail: false,
-});
+const props = defineProps<{
+    user: Pick<User, 'name' | 'avatar'> & Partial<Pick<User, 'level_label'>>;
+}>();
 
 const { getInitials } = useInitials();
 
@@ -22,17 +17,25 @@ const showAvatar = computed(
 </script>
 
 <template>
-    <Avatar class="h-8 w-8 overflow-hidden rounded-lg">
+    <Avatar class="h-8 w-8 overflow-hidden rounded-md">
         <AvatarImage v-if="showAvatar" :src="user.avatar!" :alt="user.name" />
-        <AvatarFallback class="rounded-lg text-black dark:text-white">
+        <AvatarFallback
+            class="rounded-md bg-secondary font-mono text-xs text-foreground"
+        >
             {{ getInitials(user.name) }}
         </AvatarFallback>
     </Avatar>
 
     <div class="grid flex-1 text-left text-sm leading-tight">
-        <span class="truncate font-medium">{{ user.name }}</span>
-        <span v-if="showEmail" class="truncate text-xs text-muted-foreground">{{
-            user.email
-        }}</span>
+        <span class="flex items-center gap-2">
+            <span class="truncate font-medium">{{ user.name }}</span>
+            <span
+                v-if="user.level_label"
+                class="shrink-0 rounded-sm border border-border px-1.5 font-mono text-xs text-muted-foreground"
+                data-test="level-chip"
+            >
+                {{ user.level_label }}
+            </span>
+        </span>
     </div>
 </template>

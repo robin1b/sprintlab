@@ -2,29 +2,32 @@
 
 namespace App\Models;
 
+use App\Enums\Level;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
+ * @property int $github_id
+ * @property string $github_username
  * @property string $name
- * @property string $email
- * @property Carbon|null $email_verified_at
- * @property string $password
- * @property string|null $two_factor_secret
- * @property string|null $two_factor_recovery_codes
- * @property Carbon|null $two_factor_confirmed_at
+ * @property string|null $email
+ * @property string|null $avatar_url
+ * @property Level $level
+ * @property int|null $practice_repository_id
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Fillable(['github_id', 'github_username', 'name', 'email', 'avatar_url', 'practice_repository_id'])]
+#[Hidden(['remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -38,8 +41,27 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'github_id' => 'integer',
+            'practice_repository_id' => 'integer',
+            'level' => Level::class,
         ];
+    }
+
+    /**
+     * @return HasMany<Sprint, $this>
+     */
+    public function sprints(): HasMany
+    {
+        return $this->hasMany(Sprint::class);
+    }
+
+    /**
+     * The repository the user chose to work in, when they have several.
+     *
+     * @return BelongsTo<Repository, $this>
+     */
+    public function practiceRepository(): BelongsTo
+    {
+        return $this->belongsTo(Repository::class, 'practice_repository_id');
     }
 }

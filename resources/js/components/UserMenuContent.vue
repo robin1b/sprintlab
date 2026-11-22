@@ -13,7 +13,7 @@ import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 
 type Props = {
-    user: User;
+    user: Pick<User, 'name' | 'avatar' | 'level_label'>;
 };
 
 const handleLogout = () => {
@@ -26,7 +26,7 @@ defineProps<Props>();
 <template>
     <DropdownMenuLabel class="p-0 font-normal">
         <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <UserInfo :user="user" :show-email="true" />
+            <UserInfo :user="user" />
         </div>
     </DropdownMenuLabel>
     <DropdownMenuSeparator />
@@ -34,7 +34,7 @@ defineProps<Props>();
         <DropdownMenuItem :as-child="true">
             <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
                 <Settings class="mr-2 h-4 w-4" />
-                Settings
+                Profile settings
             </Link>
         </DropdownMenuItem>
     </DropdownMenuGroup>

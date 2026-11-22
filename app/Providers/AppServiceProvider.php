@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +26,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // The owner(s) of the app, listed by GitHub id in the config.
+        Gate::define('admin', fn (User $user): bool => in_array(
+            $user->github_id,
+            (array) config('sprintlab.admin_github_ids'),
+            true,
+        ));
     }
 
     /**
@@ -37,14 +46,11 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
-        );
+        // Live, every link starts with APP_URL and https, whatever proxy or
+        // folder the request came through.
+        if (app()->isProduction()) {
+            URL::forceHttps();
+            URL::forceRootUrl((string) config('app.url'));
+        }
     }
 }

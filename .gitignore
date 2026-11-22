@@ -1,7 +1,6 @@
 /.phpunit.cache
 /bootstrap/ssr
 /node_modules
-/public/build
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage
@@ -38,7 +37,6 @@ yarn-error.log
 /.kiro
 /.pi
 /.mcp.json
-/AGENTS.md
 /CLAUDE.md
 /boost.json
 /opencode.json
