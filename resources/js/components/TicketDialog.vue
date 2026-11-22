@@ -2,6 +2,7 @@
 import { Check, Copy } from '@lucide/vue';
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
+import GuidedTicket from '@/components/GuidedTicket.vue';
 import TicketTypeTag from '@/components/TicketTypeTag.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,7 +14,10 @@ import {
 } from '@/components/ui/dialog';
 import type { BoardTicket } from '@/types/sprint';
 
-defineProps<{ ticket: BoardTicket | null }>();
+defineProps<{
+    ticket: BoardTicket | null;
+    repository?: { full_name: string; url: string } | null;
+}>();
 
 const emit = defineEmits<{ close: [] }>();
 
@@ -75,6 +79,13 @@ async function copyBranch(branch: string): Promise<void> {
                     </li>
                 </ul>
             </section>
+
+            <GuidedTicket
+                v-if="ticket.guided"
+                :ticket="ticket"
+                :repository="repository ?? null"
+                compact
+            />
 
             <section>
                 <h3 class="mb-1 font-mono text-xs text-muted-foreground">

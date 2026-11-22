@@ -221,6 +221,7 @@ class TicketServiceTest extends TestCase
     {
         $sprint = $this->startDemoSprint();
 
+        $this->tickets->move($this->ticket($sprint, 'WK-0'), TicketStatus::Done);
         $this->tickets->move($this->ticket($sprint, 'WK-1'), TicketStatus::Done);
         $sprint->refresh();
         $this->assertSame(1, $sprint->current_day);
@@ -242,7 +243,7 @@ class TicketServiceTest extends TestCase
 
         $sprint = $this->startDemoSprint();
 
-        foreach (['WK-1', 'WK-2', 'WK-3'] as $key) {
+        foreach (['WK-0', 'WK-1', 'WK-2', 'WK-3'] as $key) {
             $this->tickets->move($this->ticket($sprint, $key), TicketStatus::Done);
         }
 
@@ -268,7 +269,7 @@ class TicketServiceTest extends TestCase
         $sprint = $this->startDemoSprint();
         ScenarioEvent::where('key', 'sprint-closing')->sole()->update(['delay_minutes' => 30]);
 
-        foreach (['WK-1', 'WK-2', 'WK-3'] as $key) {
+        foreach (['WK-0', 'WK-1', 'WK-2', 'WK-3'] as $key) {
             $this->tickets->move($this->ticket($sprint, $key), TicketStatus::Done);
         }
 

@@ -28,6 +28,7 @@ class ScenarioTicketFactory extends Factory
             'description' => fake()->paragraph(),
             'acceptance_criteria' => [fake()->sentence()],
             'released_at_start' => true,
+            'guided' => false,
             'planted_issues' => null,
             'sort' => 0,
         ];

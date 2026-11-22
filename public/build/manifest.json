@@ -63,8 +63,8 @@
     "file": "assets/tours--93dbq8a.css",
     "src": "_tours--93dbq8a.css"
   },
-  "_tours-9jXif2gG.js": {
-    "file": "assets/tours-9jXif2gG.js",
+  "_tours-DA7QZrQ_.js": {
+    "file": "assets/tours-DA7QZrQ_.js",
     "name": "tours",
     "imports": [
       "_wayfinder-CuE0lIY4.js",
@@ -133,7 +133,7 @@
     "src": "node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-vietnamese-wght-normal.woff2"
   },
   "resources/css/app.css": {
-    "file": "assets/app-DGzRAHMj.css",
+    "file": "assets/app-CP_QCWQH.css",
     "name": "app",
     "names": [
       "app.css"
@@ -157,7 +157,7 @@
     ]
   },
   "resources/js/app.ts": {
-    "file": "assets/app-qlEztqpu.js",
+    "file": "assets/app-DQ5_FIqk.js",
     "name": "app",
     "src": "resources/js/app.ts",
     "isEntry": true,
@@ -185,7 +185,7 @@
     ]
   },
   "resources/js/pages/Board.vue": {
-    "file": "assets/Board-L3zWCQ51.js",
+    "file": "assets/Board-CigkDeTr.js",
     "name": "Board",
     "src": "resources/js/pages/Board.vue",
     "isDynamicEntry": true,
@@ -193,7 +193,7 @@
       "_wayfinder-CuE0lIY4.js",
       "_button-2m2sfmMh.js",
       "_createLucideIcon-DW3mKZqM.js",
-      "_tours-9jXif2gG.js",
+      "_tours-DA7QZrQ_.js",
       "_check-CzcXqVMK.js",
       "_routes-vH1iFIRv.js",
       "resources/js/app.ts",
@@ -201,7 +201,7 @@
     ]
   },
   "resources/js/pages/Chat.vue": {
-    "file": "assets/Chat-Dr8VNgep.js",
+    "file": "assets/Chat-ytHLss_J.js",
     "name": "Chat",
     "src": "resources/js/pages/Chat.vue",
     "isDynamicEntry": true,
@@ -209,21 +209,21 @@
       "_wayfinder-CuE0lIY4.js",
       "_button-2m2sfmMh.js",
       "_createLucideIcon-DW3mKZqM.js",
-      "_tours-9jXif2gG.js",
+      "_tours-DA7QZrQ_.js",
       "_routes-vH1iFIRv.js",
       "resources/js/app.ts",
       "_InputError-BkA3K8od.js"
     ]
   },
   "resources/js/pages/Dashboard.vue": {
-    "file": "assets/Dashboard-DT6p-z4y.js",
+    "file": "assets/Dashboard-Cm8__E33.js",
     "name": "Dashboard",
     "src": "resources/js/pages/Dashboard.vue",
     "isDynamicEntry": true,
     "imports": [
       "_wayfinder-CuE0lIY4.js",
       "_button-2m2sfmMh.js",
-      "_tours-9jXif2gG.js",
+      "_tours-DA7QZrQ_.js",
       "_check-CzcXqVMK.js",
       "_routes-vH1iFIRv.js",
       "resources/js/app.ts",
@@ -231,7 +231,7 @@
     ]
   },
   "resources/js/pages/ErrorPage.vue": {
-    "file": "assets/ErrorPage-_JcLortX.js",
+    "file": "assets/ErrorPage-PGhwSEuj.js",
     "name": "ErrorPage",
     "src": "resources/js/pages/ErrorPage.vue",
     "isDynamicEntry": true,
@@ -243,7 +243,7 @@
     ]
   },
   "resources/js/pages/Privacy.vue": {
-    "file": "assets/Privacy-Oaogcfr4.js",
+    "file": "assets/Privacy-CcQKqKzX.js",
     "name": "Privacy",
     "src": "resources/js/pages/Privacy.vue",
     "isDynamicEntry": true,
@@ -254,7 +254,7 @@
     ]
   },
   "resources/js/pages/Welcome.vue": {
-    "file": "assets/Welcome-Bubk-y4P.js",
+    "file": "assets/Welcome-A8d2QzK8.js",
     "name": "Welcome",
     "src": "resources/js/pages/Welcome.vue",
     "isDynamicEntry": true,
@@ -271,7 +271,7 @@
     ]
   },
   "resources/js/pages/admin/Usage.vue": {
-    "file": "assets/Usage-CRvmN-vc.js",
+    "file": "assets/Usage-6xnI-lXT.js",
     "name": "Usage",
     "src": "resources/js/pages/admin/Usage.vue",
     "isDynamicEntry": true,
@@ -291,7 +291,7 @@
     ]
   },
   "resources/js/pages/settings/Profile.vue": {
-    "file": "assets/Profile-BOAljYjz.js",
+    "file": "assets/Profile-Bq8QXZ4h.js",
     "name": "Profile",
     "src": "resources/js/pages/settings/Profile.vue",
     "isDynamicEntry": true,

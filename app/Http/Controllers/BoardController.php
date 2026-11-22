@@ -25,14 +25,21 @@ class BoardController extends Controller
 
         $tickets = $sprint === null ? [] : $sprint->tickets()
             ->whereNotNull('released_at')
-            ->with('pullRequest.repository')
+            ->with(['scenarioTicket', 'pullRequest.repository', 'pullRequest.reviews' => fn ($reviews) => $reviews->orderByDesc('id')])
             ->orderBy('day')->orderBy('sort')->orderBy('id')
             ->get()
             ->map(fn (Ticket $ticket) => $this->present($ticket))
             ->all();
 
+        $repository = $sprint !== null ? $sprint->repository : null;
+        $repository ??= $this->sprints->connectedRepositoryOf($request->user());
+
         return Inertia::render('Board', [
             'tickets' => $tickets,
+            'repository' => $repository === null ? null : [
+                'full_name' => $repository->full_name,
+                'url' => 'https://github.com/'.$repository->full_name,
+            ],
             'statuses' => collect(TicketStatus::cases())->map(fn (TicketStatus $status) => [
                 'value' => $status->value,
                 'label' => $status->label(),
@@ -46,6 +53,7 @@ class BoardController extends Controller
     private function present(Ticket $ticket): array
     {
         $pullRequest = $ticket->pullRequest;
+        $review = $pullRequest?->reviews->first();
 
         return [
             'id' => $ticket->id,
@@ -54,6 +62,7 @@ class BoardController extends Controller
             'type' => $ticket->type->value,
             'status' => $ticket->status->value,
             'day' => $ticket->day,
+            'guided' => $ticket->scenarioTicket->guided,
             'description' => $ticket->description,
             'acceptance_criteria' => $ticket->acceptance_criteria,
             'reporter' => [
@@ -64,6 +73,10 @@ class BoardController extends Controller
             'pull_request' => $pullRequest === null ? null : [
                 'number' => $pullRequest->number,
                 'url' => 'https://github.com/'.$pullRequest->repository->full_name.'/pull/'.$pullRequest->number,
+                'review' => $review === null ? null : [
+                    'status' => $review->status->value,
+                    'verdict' => $review->verdict?->value,
+                ],
             ],
             'suggested_branch' => $this->branchName($ticket),
         ];

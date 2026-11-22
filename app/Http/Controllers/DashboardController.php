@@ -116,7 +116,12 @@ class DashboardController extends Controller
 
         $collection = collect($offers);
 
-        $recommended = $collection->first(fn (array $offer) => $offer['sequence'] !== null && ! isset($passedIds[$offer['id']]))
+        // Someone who has not finished a sprint yet starts with the demo.
+        $recommended = $completedSprints->isEmpty()
+            ? $collection->first(fn (array $offer) => $offer['sequence'] === null)
+            : null;
+
+        $recommended ??= $collection->first(fn (array $offer) => $offer['sequence'] !== null && ! isset($passedIds[$offer['id']]))
             ?? $collection->first(fn (array $offer) => $offer['result'] === null)
             ?? $collection->first();
 

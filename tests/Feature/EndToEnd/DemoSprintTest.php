@@ -55,6 +55,7 @@ class DemoSprintTest extends TestCase
     {
         $this->fakeGitHubApi();
         PullRequestReviewer::fake([
+            ['verdict' => 'approve', 'summary' => 'Welcome to the team! Your Team section is spot on.', 'comments' => []],
             ['verdict' => 'request_changes', 'summary' => 'The guard works, but there is no test for approving twice.', 'comments' => []],
             ['verdict' => 'comment', 'summary' => 'The filter looks fine. Is the for-sale option covered?', 'comments' => []],
             ['verdict' => 'approve', 'summary' => 'Clear and small. Nice work.', 'comments' => []],
@@ -108,13 +109,19 @@ class DemoSprintTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Board')
-                ->has('tickets', 2)
-                ->where('tickets.0.key', 'WK-1')
-                ->where('tickets.0.status', 'todo')
-                ->where('tickets.0.type', 'bug')
-                ->where('tickets.1.key', 'WK-2')
+                ->has('tickets', 3)
+                ->where('tickets.0.key', 'WK-0')
+                ->where('tickets.0.guided', true)
+                ->where('tickets.0.suggested_branch', 'wk-0-add-yourself-team-in-readme')
+                ->where('tickets.1.key', 'WK-1')
+                ->where('tickets.1.guided', false)
                 ->where('tickets.1.status', 'todo')
-                ->where('tickets.0.suggested_branch', 'wk-1-lease-request-approved-twice'));
+                ->where('tickets.1.type', 'bug')
+                ->where('tickets.2.key', 'WK-2')
+                ->where('tickets.2.status', 'todo')
+                ->where('tickets.1.suggested_branch', 'wk-1-lease-request-approved-twice')
+                ->where('repository.full_name', 'robin/workkit')
+                ->where('repository.url', 'https://github.com/robin/workkit'));
 
         $this->get(route('chat'))
             ->assertOk()
@@ -131,10 +138,26 @@ class DemoSprintTest extends TestCase
 
         $this->get(route('dashboard'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('overview.todays_tickets', fn ($tickets) => collect($tickets)->pluck('key')->all() === ['WK-1', 'WK-2'])
-                ->where('overview.ticket_counts.0.count', 2));
+                ->where('overview.todays_tickets', fn ($tickets) => collect($tickets)->pluck('key')->all() === ['WK-0', 'WK-1', 'WK-2'])
+                ->where('overview.ticket_counts.0.count', 3));
 
-        // 3. Pushing a branch for the first ticket starts it.
+        // 2b. The guided warm-up ticket WK-0: branch, pull request with the key in its title, review, merge.
+        $this->pushBranch('wk-0-add-yourself-team-in-readme', 'delivery-wk-0-branch')->assertAccepted();
+        $this->assertTicketStatus('WK-0', TicketStatus::InProgress);
+
+        $this->pullRequest('opened', 11, 'wk-0-add-yourself-team-in-readme', 'WK-0: Add myself to the team')->assertAccepted();
+        $this->assertTicketStatus('WK-0', TicketStatus::InReview);
+        $this->assertSame(ReviewVerdict::Approve, Review::sole()->verdict);
+
+        $this->get(route('board'))->assertInertia(fn (Assert $page) => $page
+            ->where('tickets.0.pull_request.number', 11)
+            ->where('tickets.0.pull_request.review', ['status' => 'posted', 'verdict' => 'approve']));
+
+        $this->pullRequest('closed', 11, 'wk-0-add-yourself-team-in-readme', 'WK-0: Add myself to the team', merged: true)->assertAccepted();
+        $this->assertTicketStatus('WK-0', TicketStatus::Done);
+        $this->assertSame(1, $sprint->fresh()->current_day);
+
+        // 3. Pushing a branch for the next ticket starts it.
         $this->pushBranch('wk-1-lease-request-approved-twice')->assertAccepted();
 
         $this->assertTicketStatus('WK-1', TicketStatus::InProgress);
@@ -145,7 +168,7 @@ class DemoSprintTest extends TestCase
 
         $this->assertTicketStatus('WK-1', TicketStatus::InReview);
 
-        $review = Review::sole();
+        $review = Review::where('pull_request_id', $this->ticket('WK-1')->pull_request_id)->sole();
         $this->assertSame(ReviewStatus::Posted, $review->status);
         $this->assertSame(ReviewVerdict::RequestChanges, $review->verdict);
         $this->assertSame(555, $review->github_review_id);
@@ -156,9 +179,10 @@ class DemoSprintTest extends TestCase
             && str_contains($request['body'], 'no test for approving twice'));
 
         $this->get(route('board'))->assertInertia(fn (Assert $page) => $page
-            ->where('tickets.0.status', 'in_review')
-            ->where('tickets.0.pull_request.number', 12)
-            ->where('tickets.0.pull_request.url', 'https://github.com/robin/workkit/pull/12'));
+            ->where('tickets.1.status', 'in_review')
+            ->where('tickets.1.pull_request.number', 12)
+            ->where('tickets.1.pull_request.url', 'https://github.com/robin/workkit/pull/12')
+            ->where('tickets.1.pull_request.review', ['status' => 'posted', 'verdict' => 'request_changes']));
 
         // 5. Merging finishes the ticket. WK-2 is still open, so day two does not start yet.
         $this->pullRequest('closed', 12, 'wk-1-lease-request-approved-twice', 'WK-1: Fix double approval', merged: true)->assertAccepted();
@@ -198,7 +222,7 @@ class DemoSprintTest extends TestCase
         $this->assertSame(ReviewVerdict::Comment, Review::where('github_review_id', 555)->orderByDesc('id')->first()->verdict);
 
         $this->get(route('board'))->assertInertia(fn (Assert $page) => $page
-            ->where('tickets.1.acceptance_criteria.4', 'The filter can also be limited to devices that are for sale'));
+            ->where('tickets.2.acceptance_criteria.4', 'The filter can also be limited to devices that are for sale'));
         $this->get(route('chat', 'daniel'))->assertInertia(fn (Assert $page) => $page
             ->where('messages', fn ($messages) => collect($messages)->contains(fn (array $message) => str_starts_with($message['body'], 'Sorry Robin, a small change on WK-2')
                 && $message['ticket_key'] === 'WK-2')));
@@ -212,14 +236,14 @@ class DemoSprintTest extends TestCase
         $this->assertTicketStatus('WK-3', TicketStatus::Todo);
 
         $this->get(route('board'))->assertInertia(fn (Assert $page) => $page
-            ->has('tickets', 3)
-            ->where('tickets.2.key', 'WK-3')
-            ->where('tickets.2.day', 2));
+            ->has('tickets', 4)
+            ->where('tickets.3.key', 'WK-3')
+            ->where('tickets.3.day', 2));
         $this->get(route('chat', 'daniel'))->assertInertia(fn (Assert $page) => $page
             ->where('messages', fn ($messages) => collect($messages)->contains(fn (array $message) => str_starts_with($message['body'], 'Good morning Robin! Day two.'))));
         $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
             ->where('overview.todays_tickets', fn ($tickets) => collect($tickets)->pluck('key')->all() === ['WK-3'])
-            ->where('overview.ticket_counts.3.count', 2));
+            ->where('overview.ticket_counts.3.count', 3));
 
         // 7b. WK-3, the last ticket. The demo has no pull request from a colleague to review.
         $this->pushBranch('wk-3-repair-status', 'delivery-wk-3-branch')->assertAccepted();
@@ -227,7 +251,7 @@ class DemoSprintTest extends TestCase
 
         $this->pullRequest('opened', 14, 'wk-3-repair-status', 'WK-3: Show the repair status')->assertAccepted();
         $this->assertTicketStatus('WK-3', TicketStatus::InReview);
-        $this->assertSame(3, Review::where('status', ReviewStatus::Posted)->count());
+        $this->assertSame(4, Review::where('status', ReviewStatus::Posted)->count());
 
         $this->assertSame(SprintStatus::Active, $sprint->fresh()->status);
         $this->assertSame(0, SprintEvaluation::count());

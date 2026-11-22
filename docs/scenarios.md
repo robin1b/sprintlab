@@ -85,19 +85,20 @@ background: a colleague gives one pointer at a time.
 
 ## A ticket
 
-| Field                 | Required | Meaning                                                                                                              |
-| --------------------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
-| `key`                 | yes      | Unique in the scenario, for example `WK-1`.                                                                          |
-| `day`                 | yes      | The day it appears, from 1 to `duration_days`.                                                                       |
-| `type`                | yes      | `bug`, `feature`, `review` or `hotfix`.                                                                              |
-| `reporter`            | yes      | Colleague value.                                                                                                     |
-| `title`               | yes      | Text.                                                                                                                |
-| `description`         | yes      | Text.                                                                                                                |
-| `acceptance_criteria` | yes      | List of texts. Can be empty.                                                                                         |
-| `released_at_start`   | no       | `true` (default) or `false`. A hidden ticket needs a `release_ticket` event.                                         |
-| `reviewer`            | no       | Colleague who reviews the pull request of this ticket. Default: Sarah. Not allowed on a `review` ticket.             |
-| `review_notes`        | no       | Secret. What a good solution contains and typical mistakes. Only for the reviewer. Not allowed on a `review` ticket. |
-| `planted_issues`      | no       | Secret. Only on a `review` ticket, where the user reviews a colleague's pull request.                                |
+| Field                 | Required | Meaning                                                                                                                                                                                |
+| --------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `key`                 | yes      | Unique in the scenario, for example `WK-1`.                                                                                                                                            |
+| `day`                 | yes      | The day it appears, from 1 to `duration_days`.                                                                                                                                         |
+| `type`                | yes      | `bug`, `feature`, `review` or `hotfix`.                                                                                                                                                |
+| `reporter`            | yes      | Colleague value.                                                                                                                                                                       |
+| `title`               | yes      | Text.                                                                                                                                                                                  |
+| `description`         | yes      | Text.                                                                                                                                                                                  |
+| `acceptance_criteria` | yes      | List of texts. Can be empty.                                                                                                                                                           |
+| `released_at_start`   | no       | `true` (default) or `false`. A hidden ticket needs a `release_ticket` event.                                                                                                           |
+| `guided`              | no       | `true` or `false` (default). The board walks the user through this ticket step by step (branch, commit, pull request, review, merge). Use it on one small warm-up ticket per scenario. |
+| `reviewer`            | no       | Colleague who reviews the pull request of this ticket. Default: Sarah. Not allowed on a `review` ticket.                                                                               |
+| `review_notes`        | no       | Secret. What a good solution contains and typical mistakes. Only for the reviewer. Not allowed on a `review` ticket.                                                                   |
+| `planted_issues`      | no       | Secret. Only on a `review` ticket, where the user reviews a colleague's pull request.                                                                                                  |
 
 The reviewer checks a pull request against its ticket and the criteria as they
 stand at that moment, including criteria added by an `update_ticket` event.

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage, usePoll } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import GuidedTicket from '@/components/GuidedTicket.vue';
 import TicketCard from '@/components/TicketCard.vue';
 import TicketDialog from '@/components/TicketDialog.vue';
 import GuidedTour from '@/components/tour/GuidedTour.vue';
@@ -16,10 +17,14 @@ defineOptions({
     },
 });
 
-const props = defineProps<{
-    tickets: BoardTicket[];
-    statuses: StatusOption[];
-}>();
+const props = withDefaults(
+    defineProps<{
+        tickets: BoardTicket[];
+        statuses: StatusOption[];
+        repository?: { full_name: string; url: string } | null;
+    }>(),
+    { repository: null },
+);
 
 // Poll only the tickets. Polling keeps scroll position and local state, so an
 // open dialog stays open.
@@ -38,6 +43,49 @@ const columns = computed(() =>
 
 const firstTicketId = computed(
     () => columns.value.find((c) => c.tickets.length > 0)?.tickets[0].id,
+);
+
+const hiddenIds = ref<number[]>([]);
+
+function hiddenKey(id: number): string {
+    return `sprintlab.guided.hidden.${id}`;
+}
+
+function isHidden(id: number): boolean {
+    try {
+        return localStorage.getItem(hiddenKey(id)) === '1';
+    } catch {
+        return false;
+    }
+}
+
+function hideGuide(id: number): void {
+    hiddenIds.value.push(id);
+
+    try {
+        localStorage.setItem(hiddenKey(id), '1');
+    } catch {
+        // Hiding still works for this visit.
+    }
+}
+
+// Read after mount: localStorage does not exist on the server.
+onMounted(() => {
+    hiddenIds.value = props.tickets
+        .filter((t) => t.guided && isHidden(t.id))
+        .map((t) => t.id);
+});
+
+const guidedTicket = computed(() => {
+    const ticket = props.tickets.find((t) => t.guided);
+
+    return ticket && !hiddenIds.value.includes(ticket.id) ? ticket : null;
+});
+
+const boardSteps = computed(() =>
+    tours.board.filter(
+        (step) => step.target !== 'guided-ticket' || guidedTicket.value,
+    ),
 );
 
 const tour = useTour('board', {
@@ -104,6 +152,13 @@ function onDrop(status: TicketStatus): void {
             </Link>
         </p>
 
+        <GuidedTicket
+            v-if="guidedTicket"
+            :ticket="guidedTicket"
+            :repository="repository"
+            @hide="hideGuide(guidedTicket.id)"
+        />
+
         <div
             data-tour="board-columns"
             class="grid flex-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
@@ -160,9 +215,13 @@ function onDrop(status: TicketStatus): void {
             </section>
         </div>
 
-        <TicketDialog :ticket="selected" @close="selectedId = null" />
+        <TicketDialog
+            :ticket="selected"
+            :repository="repository"
+            @close="selectedId = null"
+        />
         <GuidedTour
-            :steps="tours.board"
+            :steps="boardSteps"
             :open="tour.open.value"
             @finish="tour.close('finish')"
             @skip="tour.close('skip')"

@@ -19,7 +19,7 @@ class CompletingSprintTest extends TestCase
         Queue::fake();
         $sprint = $this->startDemoSprint();
 
-        foreach (['WK-1', 'WK-2', 'WK-3'] as $key) {
+        foreach (['WK-0', 'WK-1', 'WK-2', 'WK-3'] as $key) {
             app(TicketService::class)->move($this->ticket($sprint, $key), TicketStatus::Done);
         }
 

@@ -97,7 +97,7 @@ class ScenarioImporterTest extends TestCase
 
         $this->assertSame('demo-sprint', $scenario->slug);
         $this->assertSame(2, $scenario->duration_days);
-        $this->assertSame(['WK-1', 'WK-2', 'WK-3'], $scenario->scenarioTickets()->orderBy('sort')->pluck('key')->all());
+        $this->assertSame(['WK-0', 'WK-1', 'WK-2', 'WK-3'], $scenario->scenarioTickets()->orderBy('sort')->pluck('key')->all());
         $this->assertSame(6, $scenario->scenarioEvents()->count());
 
         $change = ScenarioEvent::where('key', 'change-wk-2')->sole();
@@ -164,6 +164,33 @@ class ScenarioImporterTest extends TestCase
 
         $this->assertSame(2, $count);
         $this->assertSame(2, Scenario::count());
+    }
+
+    public function test_the_guided_flag_is_stored_and_defaults_to_false(): void
+    {
+        $data = $this->scenarioData();
+        $data['tickets'][0]['guided'] = true;
+        $data['tickets'][1]['guided'] = false;
+        $data['tickets'][] = [
+            'key' => 'WK-3', 'day' => 1, 'type' => 'bug', 'reporter' => 'sarah',
+            'title' => 'Third', 'description' => 'Describe.', 'acceptance_criteria' => [],
+        ];
+
+        $scenario = app(ScenarioImporter::class)->importFile($this->write($data));
+
+        $this->assertTrue($scenario->scenarioTickets()->where('key', 'WK-1')->sole()->guided);
+        $this->assertFalse($scenario->scenarioTickets()->where('key', 'WK-2')->sole()->guided);
+        $this->assertFalse($scenario->scenarioTickets()->where('key', 'WK-3')->sole()->guided);
+    }
+
+    public function test_a_guided_flag_that_is_not_a_boolean_is_refused(): void
+    {
+        foreach (['yes', 1, 'true', []] as $value) {
+            $data = $this->scenarioData();
+            $data['tickets'][0]['guided'] = $value;
+
+            $this->assertImportFails($data, "'guided' must be true or false");
+        }
     }
 
     public function test_a_file_that_is_not_json_is_refused(): void

@@ -47,7 +47,7 @@ class EmptyStatesTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Board')
                 ->where('sprint.status', 'paused')
-                ->has('tickets', 2));
+                ->has('tickets', 3));
     }
 
     public function test_the_chat_without_a_sprint_cannot_send_and_gives_the_reason(): void
