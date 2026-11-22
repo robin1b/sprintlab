@@ -235,7 +235,7 @@ class OnboardingTest extends TestCase
         $user = User::factory()->create();
         $this->giveRepository($user);
 
-        $expected = ['template_repository', 'template_url', 'install_url', 'installed', 'suspended', 'repositories', 'repository', 'ready'];
+        $expected = ['template_repository', 'template_url', 'install_url', 'installed', 'suspended', 'all_repositories', 'configure_url', 'repositories', 'repository', 'ready'];
 
         $this->actingAs($user)->get(route('dashboard'))
             ->assertInertia(fn (Assert $page) => $page

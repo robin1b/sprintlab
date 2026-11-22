@@ -171,13 +171,14 @@ class WebhookHandlerTest extends TestCase
         $this->assertNotNull(WebhookDelivery::sole()->processed_at);
     }
 
-    public function test_a_pull_request_of_a_known_installation_without_an_account_is_stored(): void
+    public function test_a_pull_request_of_a_known_installation_without_an_account_is_not_stored(): void
     {
-        // The app was installed before its owner signed in to Sprintlab.
+        // The app was installed before its owner signed in to Sprintlab: without
+        // a user there is no practice repository to compare with.
         $this->githubWebhook('installation', $this->installationPayload(senderId: 1), 'delivery-1');
         $this->githubWebhook('pull_request', $this->pullRequestPayload(), 'delivery-2');
 
-        $this->assertSame(1, PullRequest::count());
+        $this->assertSame(0, PullRequest::count());
     }
 
     public function test_changed_repositories_of_an_unknown_installation_without_an_account_are_ignored(): void
@@ -200,6 +201,12 @@ class WebhookHandlerTest extends TestCase
      */
     private function repositoryOwnerHasAnAccount(): User
     {
-        return User::factory()->create(['github_id' => 4242]);
+        $user = User::factory()->create(['github_id' => 4242]);
+
+        // Pull requests only count in the practice repository, which is 7001 in the payloads.
+        $installation = GitHubInstallation::create(['installation_id' => 9001, 'user_id' => $user->id, 'account_login' => 'robin', 'account_id' => 4242]);
+        Repository::create(['github_id' => 7001, 'github_installation_id' => $installation->id, 'full_name' => 'robin/workkit', 'private' => true]);
+
+        return $user;
     }
 }

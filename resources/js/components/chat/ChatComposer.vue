@@ -50,7 +50,11 @@ function onEnter(event: KeyboardEvent): void {
 </script>
 
 <template>
-    <form class="border-t border-border px-4 py-3" @submit.prevent="submit">
+    <form
+        data-tour="chat-composer"
+        class="border-t border-border px-4 py-3"
+        @submit.prevent="submit"
+    >
         <label :for="`chat-body-${colleague}`" class="sr-only">
             Message to {{ colleagueName }}
         </label>

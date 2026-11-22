@@ -14,9 +14,10 @@ use Illuminate\Support\Carbon;
  * @property int|null $user_id
  * @property string $account_login
  * @property int $account_id
+ * @property string|null $repository_selection
  * @property Carbon|null $suspended_at
  */
-#[Fillable(['installation_id', 'user_id', 'account_login', 'account_id', 'suspended_at'])]
+#[Fillable(['installation_id', 'user_id', 'account_login', 'account_id', 'repository_selection', 'suspended_at'])]
 class GitHubInstallation extends Model
 {
     protected $table = 'github_installations';

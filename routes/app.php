@@ -8,6 +8,7 @@ use App\Http\Controllers\GitHubInstalledController;
 use App\Http\Controllers\SprintController;
 use App\Http\Controllers\SprintEvaluationController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TourController;
 use Illuminate\Support\Facades\Route;
 
 // Pages of the signed-in app (overview, board, chat) and what you can do there.
@@ -28,6 +29,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('chat/{colleague?}', ChatController::class)->name('chat');
     Route::post('chat/{colleague}/messages', [ChatController::class, 'store'])->name('chat.messages.store');
+
+    Route::post('tour/{part}', [TourController::class, 'finish'])->name('tour.finish');
+    Route::delete('tour', [TourController::class, 'restart'])->name('tour.restart');
 
     Route::get('admin/usage', UsageController::class)->middleware('can:admin')->name('admin.usage');
 });

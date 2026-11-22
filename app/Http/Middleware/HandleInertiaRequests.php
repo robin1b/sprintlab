@@ -49,6 +49,7 @@ class HandleInertiaRequests extends Middleware
                     'avatar' => $request->user()->avatar_url,
                     'level' => $request->user()->level->value,
                     'level_label' => $request->user()->level->label(),
+                    'tours_done' => $request->user()->tours_done ?? [],
                 ] : null,
                 'is_admin' => $request->user() !== null && $request->user()->can('admin'),
             ],

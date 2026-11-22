@@ -13,6 +13,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use App\Models\WebhookDelivery;
 use App\Services\Sprint\PullRequestTicketLinker;
+use App\Services\Sprint\SprintService;
 use Illuminate\Support\Carbon;
 
 /**
@@ -27,7 +28,10 @@ class WebhookHandler
     // Only these pull request actions mean "there is new code to look at".
     private const REVIEWABLE_ACTIONS = ['opened', 'reopened', 'synchronize', 'ready_for_review'];
 
-    public function __construct(private readonly PullRequestTicketLinker $linker) {}
+    public function __construct(
+        private readonly PullRequestTicketLinker $linker,
+        private readonly SprintService $sprints,
+    ) {}
 
     public function handle(WebhookDelivery $delivery): void
     {
@@ -64,6 +68,8 @@ class WebhookHandler
             (int) data_get($payload, 'sender.id'),
         );
 
+        $this->rememberSelection($installation, data_get($payload, 'installation.repository_selection'));
+
         if ($action === 'suspend') {
             $installation->update(['suspended_at' => Carbon::now()]);
         } elseif ($action === 'unsuspend') {
@@ -89,6 +95,11 @@ class WebhookHandler
             (string) data_get($payload, 'installation.account.login'),
             (int) data_get($payload, 'installation.account.id'),
             (int) data_get($payload, 'sender.id'),
+        );
+
+        $this->rememberSelection(
+            $installation,
+            data_get($payload, 'repository_selection', data_get($payload, 'installation.repository_selection')),
         );
 
         foreach ((array) data_get($payload, 'repositories_added', []) as $repository) {
@@ -122,6 +133,12 @@ class WebhookHandler
             (int) data_get($payload, 'repository.owner.id'),
             (int) data_get($payload, 'repository.owner.id'),
         );
+
+        // The app may see more than the practice repository ("All repositories"):
+        // other repositories are none of our business, so nothing is stored or reviewed.
+        if (! $this->isPracticeRepository($installation->user, (int) data_get($payload, 'repository.id'))) {
+            return;
+        }
 
         $repository = $this->storeRepository($installation, (array) data_get($payload, 'repository', []));
 
@@ -185,6 +202,13 @@ class WebhookHandler
             return;
         }
 
+        // Reviews in repositories other than the practice repository are not ours.
+        $owner = GitHubInstallation::where('installation_id', (int) data_get($payload, 'installation.id'))->first()?->user;
+
+        if (! $this->isPracticeRepository($owner, (int) data_get($payload, 'repository.id'))) {
+            return;
+        }
+
         // Only the user who owns the sprint can be graded, so someone else's
         // review on the same pull request is ignored.
         $ticket = Ticket::query()
@@ -213,8 +237,33 @@ class WebhookHandler
         $installation = GitHubInstallation::where('installation_id', (int) data_get($payload, 'installation.id'))->first();
         $user = $installation?->user;
 
-        if ($user !== null) {
+        // A branch in another repository must not move a ticket.
+        if ($user !== null && $this->isPracticeRepository($user, (int) data_get($payload, 'repository.id'))) {
             $this->linker->branchCreated($user, (string) data_get($payload, 'ref'));
+        }
+    }
+
+    /**
+     * Whether the repository is the one the user practises in: the repository
+     * of the current sprint or, without one, the connected practice repository.
+     */
+    private function isPracticeRepository(?User $user, int $githubRepositoryId): bool
+    {
+        if ($user === null || $githubRepositoryId === 0) {
+            return false;
+        }
+
+        $sprint = $this->sprints->currentFor($user);
+        $repository = $sprint === null ? null : $sprint->repository;
+        $repository ??= $this->sprints->connectedRepositoryOf($user);
+
+        return $repository !== null && $repository->github_id === $githubRepositoryId;
+    }
+
+    private function rememberSelection(GitHubInstallation $installation, mixed $selection): void
+    {
+        if (in_array($selection, ['all', 'selected'], true)) {
+            $installation->update(['repository_selection' => $selection]);
         }
     }
 

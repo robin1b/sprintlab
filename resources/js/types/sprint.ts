@@ -92,4 +92,6 @@ export type SetupState = {
     repositories: SetupRepository[];
     repository: SetupRepository | null;
     ready: boolean;
+    all_repositories?: boolean;
+    configure_url?: string | null;
 };

@@ -39,6 +39,7 @@ const label = computed(() => {
 
 <template>
     <span
+        data-tour="sprint-chip"
         class="rounded-md border px-2 py-0.5 font-mono text-xs"
         :class="
             overdue

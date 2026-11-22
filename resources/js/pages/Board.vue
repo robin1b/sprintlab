@@ -3,8 +3,11 @@ import { Head, Link, router, usePage, usePoll } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import TicketCard from '@/components/TicketCard.vue';
 import TicketDialog from '@/components/TicketDialog.vue';
+import GuidedTour from '@/components/tour/GuidedTour.vue';
+import { useTour } from '@/composables/useTour';
 import { board, dashboard } from '@/routes';
 import { update } from '@/routes/tickets';
+import { tours } from '@/tours';
 import type { BoardTicket, StatusOption, TicketStatus } from '@/types/sprint';
 
 defineOptions({
@@ -32,6 +35,15 @@ const columns = computed(() =>
         tickets: props.tickets.filter((t) => t.status === status.value),
     })),
 );
+
+const firstTicketId = computed(
+    () => columns.value.find((c) => c.tickets.length > 0)?.tickets[0].id,
+);
+
+const tour = useTour('board', {
+    steps: tours.board,
+    when: () => hasSprint.value && props.tickets.length > 0,
+});
 
 // The dialog shows the live ticket, so a poll can update it while it is open.
 const selectedId = ref<number | null>(null);
@@ -92,7 +104,10 @@ function onDrop(status: TicketStatus): void {
             </Link>
         </p>
 
-        <div class="grid flex-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div
+            data-tour="board-columns"
+            class="grid flex-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        >
             <section
                 v-for="column in columns"
                 :key="column.value"
@@ -132,6 +147,7 @@ function onDrop(status: TicketStatus): void {
                         :ticket="ticket"
                         :statuses="statuses"
                         :locked="paused"
+                        :first="ticket.id === firstTicketId"
                         @open="selectedId = ticket.id"
                         @move="(status) => move(ticket, status)"
                         @drag-start="draggingId = ticket.id"
@@ -145,5 +161,11 @@ function onDrop(status: TicketStatus): void {
         </div>
 
         <TicketDialog :ticket="selected" @close="selectedId = null" />
+        <GuidedTour
+            :steps="tours.board"
+            :open="tour.open.value"
+            @finish="tour.close('finish')"
+            @skip="tour.close('skip')"
+        />
     </div>
 </template>
