@@ -2,9 +2,25 @@
     "slug": "demo-sprint",
     "title": "Demo sprint",
     "level": "junior",
-    "summary": "A short two-day sprint at Workkit to try out the platform: one bug, two small features and a requirement that changes halfway.",
+    "summary": "A short two-day sprint at Workkit to try out the platform: a guided warm-up, one bug, two small features and a requirement that changes halfway.",
     "duration_days": 2,
     "tickets": [
+        {
+            "key": "WK-0",
+            "day": 1,
+            "type": "feature",
+            "reporter": "sarah",
+            "title": "Add yourself to the team in the README",
+            "description": "Welcome to the team! Before the real work starts, one small ticket to learn how we work here. Every ticket has a key: WK stands for Workkit, and 0 is the number of this ticket. Put the key in your branch name and in the title of your pull request, so the board can follow your work.\n\nAdd a Team section at the end of README.md with your name and your role. The board guides you through every step.",
+            "acceptance_criteria": [
+                "README.md ends with a section called Team",
+                "The section lists your name and your role, developer",
+                "The change is merged through a pull request with WK-0 in its title"
+            ],
+            "released_at_start": true,
+            "guided": true,
+            "review_notes": "This is the user's very first pull request on a guided warm-up ticket. Approve it when README.md ends with a Team section that lists their name and the role developer; small differences in format are fine. A change to README.md alone needs no test. Keep the review short and warm: one sentence on what went well. Only ask for a change when the Team section is missing or does not contain a name."
+        },
         {
             "key": "WK-1",
             "day": 1,
@@ -63,7 +79,7 @@
             "day": 1,
             "action": "message",
             "colleague": "daniel",
-            "body": "Hey {first_name}, Daniel here, I'm the project manager. Two tickets for you today: WK-1 is a bug Sales keeps running into, WK-2 is a small feature customers have been asking for. Open a pull request when you think a ticket is ready and Sarah will have a look."
+            "body": "Hey {first_name}, Daniel here, I'm the project manager. Start with WK-0, a small warm-up: the board walks you through every step. After that, two tickets for you today: WK-1 is a bug Sales keeps running into, WK-2 is a small feature customers have been asking for. Open a pull request when you think a ticket is ready and Sarah will have a look."
         },
         {
             "key": "change-wk-2",

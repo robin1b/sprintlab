@@ -35,7 +35,15 @@ export type BoardTicket = {
     description: string;
     acceptance_criteria: string[];
     reporter: Colleague;
-    pull_request: { number: number; url: string } | null;
+    guided: boolean;
+    pull_request: {
+        number: number;
+        url: string;
+        review: {
+            status: 'pending' | 'posted' | 'skipped' | 'failed';
+            verdict: 'approve' | 'request_changes' | 'comment' | null;
+        } | null;
+    } | null;
     suggested_branch: string;
 };
 

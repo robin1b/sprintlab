@@ -13,7 +13,7 @@ class ImportScenariosCommandTest extends TestCase
     public function test_it_imports_a_given_file(): void
     {
         $this->artisan('sprintlab:import-scenarios', ['path' => resource_path('scenarios/demo-sprint.json')])
-            ->expectsOutputToContain('Imported demo-sprint: Demo sprint (3 tickets, 6 events)')
+            ->expectsOutputToContain('Imported demo-sprint: Demo sprint (4 tickets, 6 events)')
             ->assertSuccessful();
 
         $this->assertSame(1, Scenario::count());

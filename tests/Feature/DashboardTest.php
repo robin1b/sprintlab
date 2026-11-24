@@ -78,10 +78,10 @@ class DashboardTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Dashboard')
                 ->where('overview.ticket_counts.0.value', 'todo')
-                ->where('overview.ticket_counts.0.count', 2)
+                ->where('overview.ticket_counts.0.count', 3)
                 ->where('overview.ticket_counts.3.count', 0)
-                ->has('overview.todays_tickets', 2)
-                ->where('overview.todays_tickets.0.key', 'WK-1')
+                ->has('overview.todays_tickets', 3)
+                ->where('overview.todays_tickets.1.key', 'WK-1')
                 ->has('overview.latest_messages', 3)
                 ->where('overview.latest_messages.0.body', fn (string $body) => mb_strlen($body) <= 143));
     }
@@ -150,9 +150,14 @@ class DashboardTest extends TestCase
         $one = $this->track(1);
         $two = $this->track(2);
         $this->track(3);
-        Scenario::factory()->create(['sequence' => null]);
+        $demo = Scenario::factory()->create(['sequence' => null]);
         $this->actingAs($user);
 
+        // Nothing finished yet: the demo comes first.
+        $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page->where('recommended_id', $demo->id));
+
+        // The demo is played: now the track, from its first sprint.
+        $this->play($user, $demo);
         $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page->where('recommended_id', $one->id));
 
         $this->play($user, $one, true);

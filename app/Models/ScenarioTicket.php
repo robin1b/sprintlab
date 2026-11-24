@@ -21,13 +21,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $description
  * @property list<string> $acceptance_criteria
  * @property bool $released_at_start
+ * @property bool $guided
  * @property list<array{id: string, file?: string, description: string, severity: string}>|null $planted_issues
  * @property string|null $review_notes
  * @property Colleague|null $reviewer
  * @property int $sort
  * @property-read Scenario $scenario
  */
-#[Fillable(['scenario_id', 'key', 'day', 'type', 'reporter', 'title', 'description', 'acceptance_criteria', 'released_at_start', 'planted_issues', 'review_notes', 'reviewer', 'sort'])]
+#[Fillable(['scenario_id', 'key', 'day', 'type', 'reporter', 'title', 'description', 'acceptance_criteria', 'released_at_start', 'guided', 'planted_issues', 'review_notes', 'reviewer', 'sort'])]
 class ScenarioTicket extends Model
 {
     /** @use HasFactory<ScenarioTicketFactory> */
@@ -44,6 +45,7 @@ class ScenarioTicket extends Model
             'reporter' => Colleague::class,
             'acceptance_criteria' => 'array',
             'released_at_start' => 'boolean',
+            'guided' => 'boolean',
             'planted_issues' => 'array',
             'reviewer' => Colleague::class,
             'sort' => 'integer',

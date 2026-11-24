@@ -38,7 +38,7 @@ class SprintControllerTest extends TestCase
         $sprint = $user->sprints()->sole();
         $this->assertSame(SprintStatus::Active, $sprint->status);
         $this->assertSame($scenario->id, $sprint->scenario_id);
-        $this->assertSame(2, $sprint->tickets()->whereNotNull('released_at')->count());
+        $this->assertSame(3, $sprint->tickets()->whereNotNull('released_at')->count());
     }
 
     public function test_a_junior_can_start_a_track_scenario_of_their_level_and_a_demo()

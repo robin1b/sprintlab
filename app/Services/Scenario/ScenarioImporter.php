@@ -213,6 +213,11 @@ class ScenarioImporter
             throw $this->error($where, "'released_at_start' must be true or false");
         }
 
+        $guided = $ticket['guided'] ?? false;
+        if (! is_bool($guided)) {
+            throw $this->error($where, "'guided' must be true or false");
+        }
+
         $planted = $this->validatePlantedIssues($ticket, $type, $where);
 
         $reviewNotes = $ticket['review_notes'] ?? null;
@@ -244,6 +249,7 @@ class ScenarioImporter
             'description' => $this->requireString($ticket, 'description', $where),
             'acceptance_criteria' => $criteria,
             'released_at_start' => $released,
+            'guided' => $guided,
             // Always present, so removing the issues from the file also removes them here.
             'planted_issues' => $planted,
             'review_notes' => $reviewNotes,

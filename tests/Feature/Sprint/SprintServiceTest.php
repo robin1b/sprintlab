@@ -29,8 +29,9 @@ class SprintServiceTest extends TestCase
         $this->assertSame(SprintStatus::Active, $sprint->status);
         $this->assertSame(1, $sprint->current_day);
         $this->assertSame(now()->addDays(7)->getTimestamp(), $sprint->deadline_at->getTimestamp());
-        $this->assertSame(['WK-1', 'WK-2', 'WK-3'], $sprint->tickets()->orderBy('sort')->pluck('key')->all());
+        $this->assertSame(['WK-0', 'WK-1', 'WK-2', 'WK-3'], $sprint->tickets()->orderBy('sort')->pluck('key')->all());
 
+        $this->assertTrue($this->ticket($sprint, 'WK-0')->isReleased());
         $this->assertTrue($this->ticket($sprint, 'WK-1')->isReleased());
         $this->assertTrue($this->ticket($sprint, 'WK-2')->isReleased());
         $this->assertFalse($this->ticket($sprint, 'WK-3')->isReleased());

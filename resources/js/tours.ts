@@ -46,7 +46,7 @@ export const tours: Record<TourPart, TourStep[]> = {
         },
         {
             title: 'How a ticket flows',
-            body: 'Name every branch after its ticket, like feature/WK-1-short-name, and put the key in the title of your pull request. That is how Sprintlab links your work to the board.',
+            body: 'Every ticket has a key like WK-1: WK stands for Workkit, the number is the ticket. Put the key in your branch name, like feature/WK-1-short-name, and in the title of your pull request. That is how Sprintlab links your work to the board.',
             flow: [
                 'Branch with the ticket key',
                 'Push',
@@ -61,6 +61,11 @@ export const tours: Record<TourPart, TourStep[]> = {
             target: 'board-columns',
             title: 'Four columns',
             body: 'To do, In progress, In review and Done. You rarely move cards yourself: your work on GitHub moves them.',
+        },
+        {
+            target: 'guided-ticket',
+            title: 'Your first ticket',
+            body: 'WK-0 is a warm-up. This panel walks you through every step and ticks each one off by itself. Start here.',
         },
         {
             target: 'ticket-card',
