@@ -155,4 +155,16 @@ return [
         env('SPRINTLAB_SCENARIO_PATH') ?: storage_path('app/private/scenarios'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Courses
+    |--------------------------------------------------------------------------
+    |
+    | The folder with the course files (one JSON file per course, see
+    | docs/courses.md). Tests point it at their own fixtures.
+    |
+    */
+
+    'courses_path' => env('SPRINTLAB_COURSES_PATH') ?: resource_path('courses'),
+
 ];

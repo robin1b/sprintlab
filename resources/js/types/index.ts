@@ -3,3 +3,4 @@ export * from './auth';
 export * from './evaluation';
 export * from './navigation';
 export * from './ui';
+export * from './course';

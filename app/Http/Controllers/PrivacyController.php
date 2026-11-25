@@ -10,7 +10,7 @@ class PrivacyController extends Controller
     /**
      * The day the privacy text was last changed. Update it with the text.
      */
-    public const UPDATED_ON = '2026-11-22';
+    public const UPDATED_ON = '2026-11-25';
 
     /**
      * Show the privacy statement. The page is public: a visitor can read it

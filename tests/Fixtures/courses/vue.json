@@ -1,0 +1,181 @@
+{
+    "slug": "vue",
+    "locale": "en",
+    "title": "Vue in an hour",
+    "summary": "Build a small interactive component with Vue 3 and know how its reactivity works.",
+    "minutes": 45,
+    "updated": "2026-11-25",
+    "lessons": [
+        {
+            "slug": "components",
+            "title": "What a component is",
+            "minutes": 10,
+            "blocks": [
+                {
+                    "type": "text",
+                    "text": "A Vue component is a `.vue` file with a template, a script and optional styles. It is one piece of the page that you can reuse."
+                },
+                { "type": "heading", "text": "The three parts" },
+                {
+                    "type": "list",
+                    "items": [
+                        "**template** holds the HTML",
+                        "**script setup** holds the logic",
+                        "**style** holds the CSS"
+                    ]
+                },
+                {
+                    "type": "steps",
+                    "items": [
+                        "Create a file called `Counter.vue`.",
+                        "Add a template with one button.",
+                        "Import it in a parent and use it as a tag."
+                    ]
+                },
+                {
+                    "type": "code",
+                    "language": "vue",
+                    "caption": "A small counter",
+                    "code": "<script setup lang=\"ts\">\nimport { ref } from 'vue';\n\nconst count = ref(0);\n</script>\n\n<template>\n  <button @click=\"count++\">Clicked {{ count }} times</button>\n</template>"
+                },
+                {
+                    "type": "table",
+                    "headers": ["Part", "Contains", "Runs in"],
+                    "rows": [
+                        ["template", "HTML with bindings", "the browser"],
+                        ["script setup", "state and functions", "the browser"],
+                        ["style", "CSS for this component", "the browser"]
+                    ]
+                },
+                {
+                    "type": "note",
+                    "label": "What you already know from Laravel",
+                    "text": "A component is like a Blade component: a reusable piece of markup with its own data."
+                },
+                {
+                    "type": "note",
+                    "label": "Say it like this in an interview",
+                    "text": "A component bundles markup, logic and style, so I can reuse one piece of UI in many places. See the [Vue docs](https://vuejs.org/guide/essentials/component-basics.html)."
+                }
+            ],
+            "check": {
+                "question": "Name the three parts of a single-file component.",
+                "answer": "The template, the script and the style."
+            },
+            "deeper": [
+                {
+                    "type": "text",
+                    "text": "Think of a component as a Lego brick. It has a shape, a colour and a way of clicking onto others."
+                },
+                {
+                    "type": "text",
+                    "text": "Once you built the brick, you use it as often as you like without building it again."
+                }
+            ]
+        },
+        {
+            "slug": "reactivity",
+            "title": "Reactivity with ref",
+            "minutes": 10,
+            "blocks": [
+                {
+                    "type": "text",
+                    "text": "A `ref` holds a value that Vue watches. When the value changes, the parts of the page that use it update by themselves."
+                },
+                {
+                    "type": "code",
+                    "language": "ts",
+                    "code": "const name = ref('Robin');\nname.value = 'Sam';"
+                },
+                {
+                    "type": "note",
+                    "label": "What you already know from Laravel",
+                    "text": "It is a bit like an Eloquent attribute that tells the view when it changes."
+                },
+                {
+                    "type": "note",
+                    "label": "Say it like this in an interview",
+                    "text": "A ref is a value that Vue tracks, so the page follows the data without manual DOM updates."
+                }
+            ],
+            "check": {
+                "question": "How do you read a ref inside the script?",
+                "answer": "With `.value`. In the template Vue unwraps it for you."
+            },
+            "deeper": [
+                {
+                    "type": "text",
+                    "text": "A ref is like a whiteboard in a meeting room. Whoever looks at it sees the newest text."
+                },
+                {
+                    "type": "text",
+                    "text": "When someone rewrites it, everyone who is looking sees the change at once."
+                }
+            ]
+        }
+    ],
+    "exercise": {
+        "title": "Build a like button",
+        "minutes": 15,
+        "intro": "Make a button that counts likes and shows a message at ten.",
+        "steps": [
+            "Create `Like.vue`.",
+            "Keep the count in a `ref`.",
+            "Show a message when the count reaches 10."
+        ],
+        "starter": {
+            "language": "vue",
+            "code": "<script setup lang=\"ts\">\n// your code here\n</script>\n\n<template>\n  <button>Like</button>\n</template>"
+        },
+        "solution": [
+            {
+                "type": "text",
+                "text": "Keep the count in a `ref` and test it with `v-if`."
+            },
+            {
+                "type": "code",
+                "language": "vue",
+                "code": "<script setup lang=\"ts\">\nimport { ref } from 'vue';\n\nconst likes = ref(0);\n</script>\n\n<template>\n  <button @click=\"likes++\">Like ({{ likes }})</button>\n  <p v-if=\"likes >= 10\">Thanks for the love.</p>\n</template>"
+            }
+        ]
+    },
+    "quiz": [
+        {
+            "question": "Which part of a component holds the HTML?",
+            "options": ["template", "script", "style", "props"],
+            "answer": 0,
+            "explanation": "The template holds the markup.",
+            "lesson": "components"
+        },
+        {
+            "question": "How do you change a ref in the script?",
+            "options": [
+                "count = 1",
+                "count.value = 1",
+                "count.set(1)",
+                "count.update(1)"
+            ],
+            "answer": 1,
+            "explanation": "Inside the script you use `.value`.",
+            "lesson": "reactivity"
+        },
+        {
+            "question": "What happens when a ref changes?",
+            "options": [
+                "Nothing",
+                "The page reloads",
+                "The parts that use it update",
+                "An error is thrown"
+            ],
+            "answer": 2,
+            "explanation": "Vue updates what depends on the ref.",
+            "lesson": "reactivity"
+        }
+    ],
+    "sources": [
+        {
+            "title": "Vue: Reactivity fundamentals",
+            "url": "https://vuejs.org/guide/essentials/reactivity-fundamentals.html"
+        }
+    ]
+}

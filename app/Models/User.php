@@ -58,6 +58,22 @@ class User extends Authenticatable
     }
 
     /**
+     * @return HasMany<CourseProgress, $this>
+     */
+    public function courseProgress(): HasMany
+    {
+        return $this->hasMany(CourseProgress::class);
+    }
+
+    /**
+     * @return HasMany<CourseQuizAttempt, $this>
+     */
+    public function courseQuizAttempts(): HasMany
+    {
+        return $this->hasMany(CourseQuizAttempt::class);
+    }
+
+    /**
      * The repository the user chose to work in, when they have several.
      *
      * @return BelongsTo<Repository, $this>

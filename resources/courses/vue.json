@@ -1,0 +1,1020 @@
+{
+    "slug": "vue",
+    "locale": "en",
+    "title": "Vue in an hour",
+    "summary": "You can read a Vue component and explain what it does: reactivity, templates, props and events, composables, and how Vue works with Laravel.",
+    "minutes": 60,
+    "updated": "2026-11-25",
+    "lessons": [
+        {
+            "slug": "component",
+            "title": "What a component is",
+            "minutes": 10,
+            "blocks": [
+                {
+                    "type": "text",
+                    "text": "A Vue app is built from components. A component lives in one file with the extension `.vue`, called a single-file component (SFC). Logic, markup and optionally styles sit together in it."
+                },
+                {
+                    "type": "heading",
+                    "text": "The blocks of a component"
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "`<script setup>`: the logic, in JavaScript or TypeScript. What you declare at the top level can be used directly in the template.",
+                        "`<template>`: the markup, HTML with Vue syntax mixed in.",
+                        "`<style>`: CSS for this component. With `scoped` the styles apply only here. You do not always need this block."
+                    ]
+                },
+                {
+                    "type": "text",
+                    "text": "A build tool such as Vite compiles each `.vue` file into plain JavaScript and CSS. That is why you can write things in a `.vue` file that a browser does not understand by itself."
+                },
+                {
+                    "type": "heading",
+                    "text": "Example: a counter"
+                },
+                {
+                    "type": "code",
+                    "language": "vue",
+                    "caption": "Counter.vue",
+                    "code": "<script setup lang=\"ts\">\nimport { ref } from 'vue';\n\nconst count = ref(0);\n\nfunction add(): void {\n    count.value++;\n}\n</script>\n\n<template>\n    <button type=\"button\" @click=\"add\">Clicked: {{ count }}</button>\n</template>"
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "`ref(0)` creates a reactive value with starting value 0. In the script you read and write `count.value`.",
+                        "In the template you write `{{ count }}`, without `.value`. Vue unwraps the ref there for you.",
+                        "`@click=\"add\"` calls the function `add` on a click. When `count` changes, Vue redraws the button."
+                    ]
+                },
+                {
+                    "type": "heading",
+                    "text": "In Sprintlab's own code"
+                },
+                {
+                    "type": "text",
+                    "text": "`resources/js/components/StatusChip.vue` is a small component that shows a status label. You can see the same parts, here without a `<style>` block."
+                },
+                {
+                    "type": "code",
+                    "language": "vue",
+                    "caption": "StatusChip.vue",
+                    "code": "<script setup lang=\"ts\">\nimport { computed } from 'vue';\nimport type { TicketStatus } from '@/types/sprint';\n\nconst props = defineProps<{ status: TicketStatus; label: string }>();\n\n// Border and text colour only: the chip stays flat.\nconst tone = computed(\n    () =>\n        ({\n            todo: 'border-border text-muted-foreground',\n            in_progress: 'border-info text-info',\n            in_review: 'border-warning text-warning',\n            done: 'border-success text-success',\n        })[props.status],\n);\n</script>\n\n<template>\n    <span\n        class=\"shrink-0 rounded-sm border px-1.5 font-mono text-xs\"\n        :class=\"tone\"\n    >\n        {{ label }}\n    </span>\n</template>"
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "`defineProps<{ status: TicketStatus; label: string }>()` says which data the parent has to pass in. Lesson 4 covers this.",
+                        "`tone` is a `computed` that picks the right colour classes from `status`.",
+                        "In the template, `:class=\"tone\"` sits next to a fixed `class`. Vue merges the two."
+                    ]
+                },
+                {
+                    "type": "note",
+                    "label": "What you already know from Laravel",
+                    "text": "An SFC is like a Blade component: the view and the data it needs belong together. A prop is like an attribute on `<x-alert>`."
+                },
+                {
+                    "type": "note",
+                    "label": "As in React",
+                    "text": "A component here is not a function that returns JSX. The markup sits in a separate `<template>`, and `<script setup>` runs once per component, not on every render."
+                },
+                {
+                    "type": "note",
+                    "label": "Say it like this in an interview",
+                    "text": "A Vue component is a `.vue` file with a script, a template and optional styles. The template can use whatever `<script setup>` declares."
+                }
+            ],
+            "check": {
+                "question": "Why do you write `count.value` in the script but `{{ count }}` in the template?",
+                "answer": "A `ref` is an object with a `.value`. In the script you have to reach for it yourself. In the template, Vue unwraps top-level refs automatically."
+            },
+            "deeper": [
+                {
+                    "type": "text",
+                    "text": "Think of a small box with a note inside. The box is the `ref`, the note is the value."
+                },
+                {
+                    "type": "text",
+                    "text": "In the script you open the box yourself: `count.value`. In the template Vue does that for you, so you just write `count`."
+                },
+                {
+                    "type": "text",
+                    "text": "A component is then a card with three boxes: what it knows (script), what it looks like (template) and which colours it wears (style)."
+                }
+            ]
+        },
+        {
+            "slug": "reactivity",
+            "title": "Reactivity: ref and computed",
+            "minutes": 10,
+            "blocks": [
+                {
+                    "type": "text",
+                    "text": "Vue keeps track of which values the template uses. When such a value changes, Vue updates only that part of the page. You work with two tools: `ref` for your own data and `computed` for derived data."
+                },
+                {
+                    "type": "heading",
+                    "text": "ref and computed"
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "`ref(value)`: a reactive value. You read and write `.value` in the script. It can be a number, text or an object.",
+                        "`computed(() => ...)`: a value Vue calculates from other reactive values. You also read it through `.value`.",
+                        "A `computed` is cached. Vue only recalculates it when a value it uses changes.",
+                        "A `computed` should only calculate. It should not change anything else or send requests."
+                    ]
+                },
+                {
+                    "type": "heading",
+                    "text": "Example: a message box with a counter"
+                },
+                {
+                    "type": "code",
+                    "language": "vue",
+                    "caption": "Composer.vue",
+                    "code": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue';\n\nconst max = 20;\nconst body = ref('');\n\nconst length = computed(() => body.value.length);\nconst canSend = computed(() => body.value.trim() !== '' && length.value <= max);\n</script>\n\n<template>\n    <textarea v-model=\"body\"></textarea>\n    <p :class=\"length > max ? 'too-long' : ''\">{{ length }}/{{ max }}</p>\n    <button type=\"button\" :disabled=\"!canSend\">Send</button>\n</template>"
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "`body` is a `ref` holding the text. `v-model=\"body\"` keeps the field and the ref in sync, in both directions.",
+                        "`length` and `canSend` are `computed`. You never store or update them yourself; they follow `body` automatically.",
+                        "`:disabled=\"!canSend\"` disables the button while the message is empty or too long."
+                    ]
+                },
+                {
+                    "type": "heading",
+                    "text": "In Sprintlab's own code"
+                },
+                {
+                    "type": "text",
+                    "text": "`resources/js/components/chat/ChatComposer.vue` does the same, only bigger. Here are the data and the three computed values `length`, `canSubmit` and `showCounter`. The snippet is cut down to that part of `<script setup>`."
+                },
+                {
+                    "type": "code",
+                    "language": "ts",
+                    "caption": "ChatComposer.vue (shortened)",
+                    "code": "const form = useForm({ body: '' });\nconst field = ref<HTMLTextAreaElement | null>(null);\n\nconst length = computed(() => form.body.length);\nconst canSubmit = computed(\n    () =>\n        !form.processing &&\n        form.body.trim() !== '' &&\n        length.value <= props.maxCharacters,\n);\n// The counter stays out of the way until the limit comes close.\nconst showCounter = computed(() => length.value >= props.maxCharacters * 0.8);"
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "`length` is the length of the message. `canSubmit` is true when nothing is being sent, the message is not empty and it is not too long.",
+                        "`showCounter` shows the counter only at 80% of the maximum.",
+                        "`length.value` needs `.value` because we are in the script. `form.body` does not, because `form` is not a ref but an object with fields."
+                    ]
+                },
+                {
+                    "type": "note",
+                    "label": "What you already know from Laravel",
+                    "text": "A `computed` is like an accessor on an Eloquent model: you read it like a field, but it is calculated from other fields."
+                },
+                {
+                    "type": "note",
+                    "label": "As in React",
+                    "text": "`ref` is like `useState`, but you change it directly with `count.value++`. There is no setter. A `computed` is like `useMemo`, but Vue sees by itself which values it uses. You do not write a dependency array."
+                },
+                {
+                    "type": "note",
+                    "label": "Say it like this in an interview",
+                    "text": "A `ref` holds reactive state, and a `computed` is a cached, derived value that is recalculated when its sources change."
+                }
+            ],
+            "check": {
+                "question": "In `Composer.vue` someone types a character into the field. Which values change, and who takes care of that?",
+                "answer": "`body` changes through `v-model`. Because of that, Vue recalculates `length` and `canSend` and updates the counter and the button. You write no code for it."
+            },
+            "deeper": [
+                {
+                    "type": "text",
+                    "text": "A spreadsheet has cells with numbers and cells with a formula. The `ref` is a cell where you type something yourself."
+                },
+                {
+                    "type": "text",
+                    "text": "The `computed` is the cell with the formula, for example `=A1+A2`. Change A1 and the result is right again at once. You never edit that cell yourself."
+                }
+            ]
+        },
+        {
+            "slug": "template",
+            "title": "The template language",
+            "minutes": 10,
+            "blocks": [
+                {
+                    "type": "text",
+                    "text": "In a `<template>` you write plain HTML, extended with a few special characters and `v-` attributes. These are called directives. Once you know them, you can read almost any Vue template."
+                },
+                {
+                    "type": "table",
+                    "headers": ["Syntax", "What it does", "Example"],
+                    "rows": [
+                        [
+                            "`{{ }}`",
+                            "Shows a value as text",
+                            "`{{ ticket.title }}`"
+                        ],
+                        [
+                            "`:attr`",
+                            "Binds an attribute to an expression (short for `v-bind`)",
+                            "`:disabled=\"!canSend\"`"
+                        ],
+                        [
+                            "`@event`",
+                            "Listens to an event (short for `v-on`)",
+                            "`@click=\"add\"`"
+                        ],
+                        [
+                            "`v-if` / `v-else`",
+                            "Shows or hides an element",
+                            "`<p v-if=\"tickets.length === 0\">`"
+                        ],
+                        [
+                            "`v-for` + `:key`",
+                            "Repeats an element for each item in a list",
+                            "`v-for=\"task in tasks\" :key=\"task.id\"`"
+                        ],
+                        [
+                            "`v-model`",
+                            "Keeps an input and a ref in sync, in both directions",
+                            "`<input v-model=\"newTitle\" />`"
+                        ],
+                        [
+                            "`:class`",
+                            "Sets classes based on a value",
+                            "`:class=\"{ done: task.done }\"`"
+                        ],
+                        [
+                            "`.prevent`",
+                            "Modifier: calls `preventDefault()` on the event",
+                            "`@submit.prevent=\"add\"`"
+                        ]
+                    ]
+                },
+                {
+                    "type": "text",
+                    "text": "A mustache `{{ }}` works only between tags, as text. In an attribute you use `:`, so `:id=\"id\"` and not `id=\"{{ id }}\"`. A `:` expression is plain JavaScript."
+                },
+                {
+                    "type": "heading",
+                    "text": "Example: a list"
+                },
+                {
+                    "type": "code",
+                    "language": "vue",
+                    "caption": "List.vue",
+                    "code": "<script setup lang=\"ts\">\nimport { ref } from 'vue';\n\nconst tickets = ref([\n    { id: 1, title: 'Fix the login', status: 'done' },\n    { id: 2, title: 'Add a filter', status: 'todo' },\n]);\n</script>\n\n<template>\n    <p v-if=\"tickets.length === 0\">No tickets.</p>\n    <ul v-else>\n        <li\n            v-for=\"ticket in tickets\"\n            :key=\"ticket.id\"\n            :class=\"{ done: ticket.status === 'done' }\"\n        >\n            {{ ticket.title }}\n        </li>\n    </ul>\n</template>"
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "`v-if` and `v-else` belong together: the list appears only when there are tickets, otherwise the text. `v-else` comes right after the element with `v-if`.",
+                        "`v-for` creates one `<li>` per ticket. `:key=\"ticket.id\"` gives each element a stable identity, so Vue recognises the right element when the list changes.",
+                        "`:class=\"{ done: ticket.status === 'done' }\"` adds the class `done` only when the condition is true."
+                    ]
+                },
+                {
+                    "type": "heading",
+                    "text": "In Sprintlab's own code"
+                },
+                {
+                    "type": "text",
+                    "text": "`resources/js/pages/Board.vue` uses the same syntax. First `v-if` and `v-else-if` for two messages."
+                },
+                {
+                    "type": "code",
+                    "language": "vue",
+                    "caption": "Board.vue",
+                    "code": "<p v-else-if=\"!hasSprint\" class=\"text-muted-foreground\">\n    Tickets appear here when your first sprint starts.\n    <Link\n        :href=\"dashboard()\"\n        class=\"rounded-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none\"\n    >\n        Go to the overview\n    </Link>\n</p>"
+                },
+                {
+                    "type": "text",
+                    "text": "Then the columns. Note the `v-for` with `:key`, the bound `:class` and `@dragover.prevent`."
+                },
+                {
+                    "type": "code",
+                    "language": "vue",
+                    "caption": "Board.vue",
+                    "code": "<section\n    v-for=\"column in columns\"\n    :key=\"column.value\"\n    class=\"flex min-h-48 flex-col rounded-md border bg-card\"\n    :class=\"\n        dropTarget === column.value\n            ? 'border-primary'\n            : 'border-border'\n    \"\n    @dragover.prevent=\"dropTarget = column.value\"\n    @dragleave=\"\n        (e: DragEvent) =>\n            !(e.currentTarget as HTMLElement).contains(\n                e.relatedTarget as Node,\n            ) && (dropTarget = null)\n    \"\n    @drop.prevent=\"onDrop(column.value)\"\n>"
+                },
+                {
+                    "type": "text",
+                    "text": "Inside the column are the title with a count and a message when the column is empty."
+                },
+                {
+                    "type": "code",
+                    "language": "vue",
+                    "caption": "Board.vue",
+                    "code": "<h2\n    class=\"flex items-center justify-between border-b border-border px-3 py-2 text-sm font-medium\"\n>\n    {{ column.label }}\n    <span class=\"font-mono text-xs text-muted-foreground\">\n        {{ column.tickets.length }}\n    </span>\n</h2>\n<div class=\"flex flex-1 flex-col gap-2 p-2\">\n    <p\n        v-if=\"column.tickets.length === 0 && hasSprint\"\n        class=\"px-1 py-2 text-xs text-muted-foreground\"\n    >\n        No tickets in {{ column.label.toLowerCase() }}.\n    </p>"
+                },
+                {
+                    "type": "note",
+                    "label": "What you already know from Laravel",
+                    "text": "Blade translation: `{{ }}` is `{{ }}`, `v-if` is `@if`, `v-for` is `@foreach`. The difference is that Vue updates the page when the data changes. Blade renders once on the server."
+                },
+                {
+                    "type": "note",
+                    "label": "As in React",
+                    "text": "You write `:class` instead of `className`, `v-if` instead of `&&` or a ternary, and `v-for` with `:key` instead of `.map()` with `key`. The idea of the key is the same."
+                },
+                {
+                    "type": "note",
+                    "label": "Say it like this in an interview",
+                    "text": "In a Vue template, `{{ }}` shows text, `:` and `@` bind attributes and events, and `v-if` and `v-for` control what is rendered."
+                }
+            ],
+            "check": {
+                "question": "Why does `v-for` always get a `:key`, and which value do you pick for it?",
+                "answer": "The key lets Vue recognise each element when the list changes. Pick something unique and stable, such as the item's `id`, and not its position in the list."
+            },
+            "deeper": [
+                {
+                    "type": "text",
+                    "text": "The template is a letter with blanks. `{{ }}` is a blank for text. `v-if` is a paragraph you cross out or keep."
+                },
+                {
+                    "type": "text",
+                    "text": "`v-for` is a rubber stamp: you press the same line once per item. The `:key` is the number on each print, so with a new batch you know which print belongs to which item."
+                },
+                {
+                    "type": "text",
+                    "text": "`:` says 'this is not text but an expression'. `@` says 'do this when that happens'."
+                }
+            ]
+        },
+        {
+            "slug": "props-events",
+            "title": "Props down, events up",
+            "minutes": 10,
+            "blocks": [
+                {
+                    "type": "text",
+                    "text": "Components work together by one rule. Data goes from parent to child as **props**. Messages go from child to parent as **events**."
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "A child declares its props with `defineProps` and its events with `defineEmits`.",
+                        "A child does not change a prop. The prop is read-only, and Vue warns you if you try.",
+                        "If the child wants something changed, it sends an event. The parent decides and changes its own data."
+                    ]
+                },
+                {
+                    "type": "heading",
+                    "text": "Example: a row and its parent"
+                },
+                {
+                    "type": "code",
+                    "language": "vue",
+                    "caption": "TicketRow.vue (the child)",
+                    "code": "<script setup lang=\"ts\">\ndefineProps<{ title: string; done: boolean }>();\n\nconst emit = defineEmits<{ toggle: [] }>();\n</script>\n\n<template>\n    <li>\n        <label>\n            <input type=\"checkbox\" :checked=\"done\" @change=\"emit('toggle')\" />\n            {{ title }}\n        </label>\n    </li>\n</template>"
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "`defineProps<{ title: string; done: boolean }>()` says which two props the row expects, and their types.",
+                        "`defineEmits<{ toggle: [] }>()` says the row can send a `toggle` event, with no data.",
+                        "When the checkbox changes, the row calls `emit('toggle')`. The row does not change `done` itself."
+                    ]
+                },
+                {
+                    "type": "code",
+                    "language": "vue",
+                    "caption": "Parent.vue (the parent)",
+                    "code": "<script setup lang=\"ts\">\nimport { ref } from 'vue';\nimport TicketRow from './TicketRow.vue';\n\nconst tickets = ref([\n    { id: 1, title: 'Fix the login', done: true },\n    { id: 2, title: 'Add a filter', done: false },\n]);\n\nfunction toggle(id: number): void {\n    const ticket = tickets.value.find((t) => t.id === id);\n\n    if (ticket) {\n        ticket.done = !ticket.done;\n    }\n}\n</script>\n\n<template>\n    <ul>\n        <TicketRow\n            v-for=\"ticket in tickets\"\n            :key=\"ticket.id\"\n            :title=\"ticket.title\"\n            :done=\"ticket.done\"\n            @toggle=\"toggle(ticket.id)\"\n        />\n    </ul>\n</template>"
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "The parent owns the data: the `ref` with tickets.",
+                        "`:title` and `:done` pass props. `@toggle=\"toggle(ticket.id)\"` listens for the event.",
+                        "The `toggle` function changes `done` in the parent. The new prop then flows down to the child again."
+                    ]
+                },
+                {
+                    "type": "heading",
+                    "text": "In Sprintlab's own code"
+                },
+                {
+                    "type": "text",
+                    "text": "On Sprintlab's board, `Board.vue` shows each ticket with a `TicketCard`. This is how that usage looks in the file, without the two drag events."
+                },
+                {
+                    "type": "code",
+                    "language": "vue",
+                    "caption": "Board.vue (shortened)",
+                    "code": "<TicketCard\n    v-for=\"ticket in column.tickets\"\n    :key=\"ticket.id\"\n    :ticket=\"ticket\"\n    :statuses=\"statuses\"\n    :locked=\"paused\"\n    :first=\"ticket.id === firstTicketId\"\n    @open=\"selectedId = ticket.id\"\n    @move=\"(status) => move(ticket, status)\"\n/>"
+                },
+                {
+                    "type": "text",
+                    "text": "`TicketCard.vue` declares its side of the contract like this."
+                },
+                {
+                    "type": "code",
+                    "language": "ts",
+                    "caption": "TicketCard.vue",
+                    "code": "const props = defineProps<{\n    ticket: BoardTicket;\n    statuses: StatusOption[];\n    // True when the sprint is paused: the card can be read, not moved.\n    locked: boolean;\n    // The first card on the board carries the guided tour anchor.\n    first?: boolean;\n}>();\n\nconst emit = defineEmits<{\n    open: [];\n    move: [status: TicketStatus];\n    dragStart: [];\n    dragEnd: [];\n}>();"
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "`:ticket`, `:statuses`, `:locked` and `:first` are props. `first` has a question mark, so it is optional.",
+                        "`@open` and `@move` are events. `move` carries the new status, and the arrow function `(status) => move(ticket, status)` receives it.",
+                        "The card does not change the ticket itself. The page decides what happens."
+                    ]
+                },
+                {
+                    "type": "note",
+                    "label": "What you already know from Laravel",
+                    "text": "Props are like the variables you pass to a Blade component. Events are like Laravel events: one part announces something, another listens, and they do not know each other."
+                },
+                {
+                    "type": "note",
+                    "label": "As in React",
+                    "text": "Props down works as in React. There, an event is a callback prop such as `onToggle`. In Vue you declare it as an event and call `emit('toggle')`."
+                },
+                {
+                    "type": "note",
+                    "label": "Say it like this in an interview",
+                    "text": "Data flows down as props and messages flow up as events, so the parent always decides."
+                }
+            ],
+            "check": {
+                "question": "In `TicketRow.vue` someone clicks the checkbox. Which steps follow until the row looks different?",
+                "answer": "The row sends `emit('toggle')`. The parent runs `toggle(ticket.id)` and changes `done`. The row then receives a new `done` prop and Vue redraws it."
+            },
+            "deeper": [
+                {
+                    "type": "text",
+                    "text": "A waiter (child) and a kitchen (parent). The kitchen hands the waiter a plate: those are the props. The waiter does not remake the dish, he takes it to the table."
+                },
+                {
+                    "type": "text",
+                    "text": "If the guest says 'this is cold', the waiter calls it out to the kitchen: that is the event. The kitchen decides and sends out a new plate."
+                }
+            ]
+        },
+        {
+            "slug": "composables",
+            "title": "Composables and lifecycle",
+            "minutes": 10,
+            "blocks": [
+                {
+                    "type": "text",
+                    "text": "A composable is a plain function that bundles logic with state so several components can reuse it. By convention the name starts with `use`. Such a function usually returns refs."
+                },
+                {
+                    "type": "heading",
+                    "text": "Lifecycle hooks"
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "`onMounted`: runs once the component is on the page. This is where you start things such as a timer.",
+                        "`onBeforeUnmount`: runs just before the component goes away. This is where you clean up what you started.",
+                        "A composable may call these hooks. They belong to the component that uses the composable."
+                    ]
+                },
+                {
+                    "type": "heading",
+                    "text": "In Sprintlab's own code"
+                },
+                {
+                    "type": "text",
+                    "text": "This is the whole file `resources/js/composables/useNow.ts`. It returns the current time as a ref that refreshes itself. Sprintlab uses it in `Dashboard.vue` and `Chat.vue`, among others."
+                },
+                {
+                    "type": "code",
+                    "language": "ts",
+                    "caption": "useNow.ts",
+                    "code": "import { onBeforeUnmount, onMounted, ref } from 'vue';\nimport type { Ref } from 'vue';\n\n// The current time as a ref that refreshes itself, so \"3d 4h left\" stays true.\nexport function useNow(intervalMs = 60_000): Ref<number> {\n    const now = ref(Date.now());\n    let timer: ReturnType<typeof setInterval> | undefined;\n\n    onMounted(() => {\n        now.value = Date.now();\n        timer = setInterval(() => (now.value = Date.now()), intervalMs);\n    });\n\n    onBeforeUnmount(() => clearInterval(timer));\n\n    return now;\n}"
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "`useNow(intervalMs = 60_000)` has a default of one minute. It returns a `Ref<number>`.",
+                        "In `onMounted` it sets `now` and starts a timer that refreshes `now` every period.",
+                        "In `onBeforeUnmount` it stops the timer. Without that, the timer would keep running after the component is gone.",
+                        "A component uses it like this: `const now = useNow(60_000);` and then reads `now.value`."
+                    ]
+                },
+                {
+                    "type": "heading",
+                    "text": "Reacting to a change with watch"
+                },
+                {
+                    "type": "text",
+                    "text": "With `watch` you run code when a value changes. You use it for a side effect, such as saving or sending a request. For a derived value you use `computed`."
+                },
+                {
+                    "type": "code",
+                    "language": "vue",
+                    "caption": "Watch.vue",
+                    "code": "<script setup lang=\"ts\">\nimport { onBeforeUnmount, onMounted, ref, watch } from 'vue';\n\nconst body = ref('');\nconst saved = ref('');\nconst now = ref(0);\nlet timer: ReturnType<typeof setInterval> | undefined;\n\nwatch(body, (newValue) => {\n    saved.value = newValue;\n});\n\nonMounted(() => {\n    now.value = 1;\n    timer = setInterval(() => (now.value = now.value + 1), 60_000);\n});\n\nonBeforeUnmount(() => clearInterval(timer));\n</script>\n\n<template>\n    <input v-model=\"body\" />\n    <p class=\"saved\">{{ saved }}</p>\n    <p class=\"now\">{{ now }}</p>\n</template>"
+                },
+                {
+                    "type": "list",
+                    "items": [
+                        "`watch(body, (newValue) => { ... })` runs every time `body` changes, and receives the new value.",
+                        "This file also puts a timer straight into the component, as `useNow` does. That works, but if you repeat it in three components, you turn it into a composable."
+                    ]
+                },
+                {
+                    "type": "note",
+                    "label": "What you already know from Laravel",
+                    "text": "A composable is like a service class you use in several controllers. The hooks are like model events such as `created` and `deleting`: fixed moments where you can hook in."
+                },
+                {
+                    "type": "note",
+                    "label": "As in React",
+                    "text": "A composable is a custom hook. `onMounted` with `onBeforeUnmount` is like `useEffect` with a cleanup. `watch` is like `useEffect` with a dependency, but you name the source yourself."
+                },
+                {
+                    "type": "note",
+                    "label": "Say it like this in an interview",
+                    "text": "A composable is a function that packages reusable stateful logic, and `useNow` starts a timer in `onMounted` and cleans it up in `onBeforeUnmount`."
+                }
+            ],
+            "check": {
+                "question": "What goes wrong if `useNow` does not stop the timer in `onBeforeUnmount`?",
+                "answer": "The timer keeps running after the component is gone. It keeps updating the ref, and each time the component appears again an extra timer is added."
+            },
+            "deeper": [
+                {
+                    "type": "text",
+                    "text": "A composable is a toolbox you can put in any workshop. `useNow` is the box with an alarm clock in it."
+                },
+                {
+                    "type": "text",
+                    "text": "`onMounted` is switching the alarm on when you open the workshop. `onBeforeUnmount` is switching it off when you lock the door. Forget that and it keeps ringing in an empty room."
+                },
+                {
+                    "type": "text",
+                    "text": "`watch` is a doorbell: as soon as someone rings, you do something."
+                }
+            ]
+        },
+        {
+            "slug": "laravel",
+            "title": "Vue with Laravel, and the older Options API",
+            "minutes": 10,
+            "blocks": [
+                {
+                    "type": "text",
+                    "text": "With Laravel there are two common ways to use Vue. You pick Inertia, or you build a separate Vue app that calls an API. On top of that, you will meet the Options API in older code."
+                },
+                {
+                    "type": "heading",
+                    "text": "Inertia: Laravel and Vue as one app"
+                },
+                {
+                    "type": "text",
+                    "text": "With Inertia, routes, controllers and login stay in Laravel. A controller returns not a Blade view but a Vue page with props. Sprintlab works this way."
+                },
+                {
+                    "type": "code",
+                    "language": "php",
+                    "caption": "BoardController.php (shortened)",
+                    "code": "return Inertia::render('Board', [\n    'tickets' => $tickets,\n    'statuses' => collect(TicketStatus::cases())->map(fn (TicketStatus $status) => [\n        'value' => $status->value,\n        'label' => $status->label(),\n    ])->all(),\n]);"
+                },
+                {
+                    "type": "text",
+                    "text": "`Inertia::render('Board', [...])` picks the page `Board` and passes the array as props. In `resources/js/pages/Board.vue`, `defineProps` receives them."
+                },
+                {
+                    "type": "code",
+                    "language": "ts",
+                    "caption": "Board.vue",
+                    "code": "const props = defineProps<{\n    tickets: BoardTicket[];\n    statuses: StatusOption[];\n}>();"
+                },
+                {
+                    "type": "table",
+                    "headers": ["Helper", "What it does", "Where in Sprintlab"],
+                    "rows": [
+                        [
+                            "`router.patch`",
+                            "Sends a PATCH request to Laravel without a full page load",
+                            "`Board.vue`"
+                        ],
+                        [
+                            "`useForm`",
+                            "Tracks form data, errors and a `processing` flag",
+                            "`ChatComposer.vue`"
+                        ],
+                        [
+                            "`usePoll`",
+                            "Reloads props on an interval, without your own timer",
+                            "`Board.vue`"
+                        ],
+                        [
+                            "Shared props",
+                            "Props that belong to every page, read with `usePage()`",
+                            "`HandleInertiaRequests.php`"
+                        ]
+                    ]
+                },
+                {
+                    "type": "text",
+                    "text": "Moving a ticket is a `router.patch`. `preserveScroll` and `preserveState` leave the page as it was."
+                },
+                {
+                    "type": "code",
+                    "language": "ts",
+                    "caption": "Board.vue",
+                    "code": "router.patch(\n    update.url(ticket.id),\n    { status },\n    { preserveScroll: true, preserveState: true },\n);"
+                },
+                {
+                    "type": "text",
+                    "text": "A form uses `useForm`, as `ChatComposer.vue` does. Errors from Laravel validation end up in `form.errors` by themselves."
+                },
+                {
+                    "type": "code",
+                    "language": "ts",
+                    "caption": "ChatComposer.vue",
+                    "code": "function submit(): void {\n    if (!canSubmit.value) {\n        return;\n    }\n\n    form.post(store(props.colleague).url, {\n        preserveScroll: true,\n        onSuccess: () => {\n            form.reset();\n            field.value?.focus();\n        },\n    });\n}"
+                },
+                {
+                    "type": "text",
+                    "text": "The board refreshes itself with `usePoll`, and reads a shared prop with `usePage()`."
+                },
+                {
+                    "type": "code",
+                    "language": "ts",
+                    "caption": "Board.vue",
+                    "code": "// Poll only the tickets. Polling keeps scroll position and local state, so an\n// open dialog stays open.\nusePoll(8_000, { only: ['tickets'] });\n\nconst page = usePage();\nconst hasSprint = computed(() => page.props.sprint !== null);\nconst paused = computed(() => page.props.sprint?.status === 'paused');"
+                },
+                {
+                    "type": "text",
+                    "text": "The shared props come from the middleware `app/Http/Middleware/HandleInertiaRequests.php`. Here are three of them, next to `auth` and `flash` among others."
+                },
+                {
+                    "type": "code",
+                    "language": "php",
+                    "caption": "HandleInertiaRequests.php",
+                    "code": "'sprint' => fn () => $this->sprintProps($request),\n'unreadMessages' => fn () => $this->unreadMessages($request),\n'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',"
+                },
+                {
+                    "type": "heading",
+                    "text": "A separate Vue app with an API"
+                },
+                {
+                    "type": "text",
+                    "text": "Here Laravel is only an API and Vue runs as its own project. Then you handle yourself what Inertia gives you."
+                },
+                {
+                    "type": "table",
+                    "headers": ["What", "Inertia", "Separate app with an API"],
+                    "rows": [
+                        [
+                            "Routes",
+                            "In Laravel",
+                            "In **Vue Router**, in the browser"
+                        ],
+                        [
+                            "Data",
+                            "Props from the controller",
+                            "API requests, for example with axios"
+                        ],
+                        [
+                            "Shared state",
+                            "Shared props",
+                            "A store, for example **Pinia**"
+                        ],
+                        ["Forms", "`useForm`", "Your own state and requests"]
+                    ]
+                },
+                {
+                    "type": "text",
+                    "text": "Vue Router is the official router for single-page Vue apps. Pinia is the store the Vue docs recommend for new apps. Axios is a separate library for sending HTTP requests."
+                },
+                {
+                    "type": "heading",
+                    "text": "Recognising the older Options API"
+                },
+                {
+                    "type": "text",
+                    "text": "Vue has two styles. The Options API organises code into options such as `data` and `methods`, and uses `this`. You saw the Composition API with `<script setup>` in this course."
+                },
+                {
+                    "type": "code",
+                    "language": "vue",
+                    "caption": "Options.vue",
+                    "code": "<script>\nexport default {\n    data() {\n        return { count: 0 };\n    },\n    methods: {\n        add() {\n            this.count++;\n        },\n    },\n};\n</script>\n\n<template>\n    <button type=\"button\" @click=\"add\">Clicked: {{ count }}</button>\n</template>"
+                },
+                {
+                    "type": "text",
+                    "text": "This is the same counter as `Counter.vue` from lesson 1. Both styles run on the same system. For full applications, the Vue docs recommend the Composition API with SFCs."
+                },
+                {
+                    "type": "table",
+                    "headers": ["Options API", "Composition API"],
+                    "rows": [
+                        [
+                            "`data() { return { count: 0 } }`",
+                            "`const count = ref(0)`"
+                        ],
+                        [
+                            "`methods: { add() { ... } }`",
+                            "`function add() { ... }`"
+                        ],
+                        ["`this.count++`", "`count.value++`"],
+                        ["`computed: { ... }`", "`computed(() => ...)`"],
+                        ["`mounted() { ... }`", "`onMounted(() => ...)`"],
+                        [
+                            "`watch: { body() { ... } }`",
+                            "`watch(body, () => ...)`"
+                        ],
+                        ["`props: { ... }`", "`defineProps<{ ... }>()`"]
+                    ]
+                },
+                {
+                    "type": "note",
+                    "label": "What you already know from Laravel",
+                    "text": "Inertia is the bridge that connects your controller straight to a Vue page: `Inertia::render` takes the place of `view()`. A separate app with an API is like a frontend that calls `routes/api.php`."
+                },
+                {
+                    "type": "note",
+                    "label": "As in React",
+                    "text": "A separate Vue app with Vue Router and Pinia resembles a React app with React Router and a store. Inertia is closer to a server-driven app where the frontend is a Vue page."
+                },
+                {
+                    "type": "note",
+                    "label": "Say it like this in an interview",
+                    "text": "`Inertia::render` connects a Laravel controller to a Vue page through props. A separate Vue app talks to Laravel only through an API."
+                }
+            ],
+            "check": {
+                "question": "What is the difference between Inertia and a separate Vue app with an API, in terms of routes and data?",
+                "answer": "With Inertia, routes live in Laravel and data arrives as props from the controller. In a separate app, routes live in Vue Router and you fetch data through API requests."
+            },
+            "deeper": [
+                {
+                    "type": "text",
+                    "text": "Inertia is a restaurant with one kitchen. The kitchen (Laravel) and the dining room (Vue) belong together, and the waiter walks straight back and forth."
+                },
+                {
+                    "type": "text",
+                    "text": "A separate app with an API is a takeaway with its own shop. The shop (Vue) orders by phone from the kitchen (the API), and you handle orders and the menu yourself."
+                },
+                {
+                    "type": "text",
+                    "text": "The Options API is the same kitchen with an older recipe book: different handwriting, same dishes."
+                }
+            ]
+        }
+    ],
+    "exercise": {
+        "title": "Build a task list in the Vue Playground",
+        "minutes": 20,
+        "intro": "You build a task list in the online Vue SFC Playground at play.vuejs.org. You do not need to install anything. It lets you practise `v-for`, `v-model`, `computed`, a form and a child component.",
+        "steps": [
+            "Open play.vuejs.org and replace the contents of `App.vue` with the starter below.",
+            "Show the tasks in a `<ul>` with `v-for`. Give each `<li>` a `:key=\"task.id\"` and show `{{ task.title }}`.",
+            "Put a checkbox in each row with `v-model=\"task.done\"`. Give the title the class `done` when the task is done, with `:class=\"{ done: task.done }\"`. Add a `<style scoped>` that strikes `.done` through.",
+            "Create a `computed` called `open` that counts how many tasks are not done yet. Show `Still to do: {{ open }}`.",
+            "Add a form with a `ref` called `newTitle`, an input with `v-model=\"newTitle\"` and `@submit.prevent=\"add\"`. In `add`, trim the spaces, stop on an empty title, and otherwise add a task and clear the field.",
+            "Add a **Remove** button to each task that calls a function `remove(task.id)`. In that function, keep all the other tasks.",
+            "Extra: create a child component `TaskRow.vue` (a new file in the Playground) with the props `title` and `done` and the events `toggle` and `remove`, like `TicketRow.vue` in lesson 4. Use it in `App.vue`."
+        ],
+        "starter": {
+            "language": "vue",
+            "code": "<script setup lang=\"ts\">\nimport { ref } from 'vue';\n\nconst tasks = ref([\n    { id: 1, title: 'Learn Vue', done: false },\n    { id: 2, title: 'Read the Inertia docs', done: false },\n]);\n</script>\n\n<template>\n    <h1>My tasks</h1>\n</template>"
+        },
+        "solution": [
+            {
+                "type": "text",
+                "text": "This is the complete solution, without the child component from the extra step. The code was compiled and run."
+            },
+            {
+                "type": "code",
+                "language": "vue",
+                "caption": "Todo.vue",
+                "code": "<script setup lang=\"ts\">\nimport { computed, ref } from 'vue';\n\ntype Task = { id: number; title: string; done: boolean };\n\nconst tasks = ref<Task[]>([\n    { id: 1, title: 'Learn Vue', done: false },\n    { id: 2, title: 'Read the Inertia docs', done: false },\n]);\nconst newTitle = ref('');\n\nconst open = computed(() => tasks.value.filter((t) => !t.done).length);\n\nfunction add(): void {\n    const title = newTitle.value.trim();\n\n    if (title === '') {\n        return;\n    }\n\n    tasks.value.push({ id: Date.now(), title, done: false });\n    newTitle.value = '';\n}\n\nfunction remove(id: number): void {\n    tasks.value = tasks.value.filter((t) => t.id !== id);\n}\n</script>\n\n<template>\n    <h1>My tasks</h1>\n\n    <form @submit.prevent=\"add\">\n        <input v-model=\"newTitle\" placeholder=\"New task\" />\n        <button type=\"submit\">Add</button>\n    </form>\n\n    <p>Still to do: {{ open }}</p>\n\n    <ul>\n        <li v-for=\"task in tasks\" :key=\"task.id\">\n            <label>\n                <input v-model=\"task.done\" type=\"checkbox\" />\n                <span :class=\"{ done: task.done }\">{{ task.title }}</span>\n            </label>\n            <button type=\"button\" @click=\"remove(task.id)\">Remove</button>\n        </li>\n    </ul>\n</template>\n\n<style scoped>\n.done {\n    text-decoration: line-through;\n}\n</style>"
+            },
+            {
+                "type": "list",
+                "items": [
+                    "`tasks` is a `ref` holding a list. `v-for` with `:key` shows them, and `v-model=\"task.done\"` changes `done` directly.",
+                    "`open` is a `computed`. It counts again as soon as a task is ticked, added or removed.",
+                    "`@submit.prevent=\"add\"` stops the page from reloading. `add` stops on an empty title and clears the field after adding.",
+                    "`remove` builds a new list without the chosen task and assigns it to `tasks.value`."
+                ]
+            },
+            {
+                "type": "text",
+                "text": "For the extra step, move the `<li>` into `TaskRow.vue`. Pass `title` and `done` as props and let the row send `toggle` and `remove`, just like `TicketRow.vue`."
+            }
+        ]
+    },
+    "quiz": [
+        {
+            "question": "What does `<script setup>` do for the template?",
+            "options": [
+                "What you declare at the top level can be used directly in the template",
+                "It runs the code on the server instead of in the browser",
+                "It replaces the `<template>` block",
+                "It makes the component's CSS local"
+            ],
+            "answer": 0,
+            "explanation": "Top-level variables, functions and imports in `<script setup>` are available in the template without returning them.",
+            "lesson": "component"
+        },
+        {
+            "question": "In the script you read a ref as `count.value`. How do you show it in the template?",
+            "options": [
+                "`{{ count.value }}`",
+                "`{{ ref(count) }}`",
+                "`{{ count }}`, Vue unwraps the value itself",
+                "`{{ $count }}`"
+            ],
+            "answer": 2,
+            "explanation": "Top-level refs are unwrapped automatically in the template, so you leave out `.value`.",
+            "lesson": "component"
+        },
+        {
+            "question": "What is the advantage of a `computed` over a function you call on every render?",
+            "options": [
+                "A `computed` may also change data",
+                "The result is cached and only recalculated when a used value changes",
+                "A `computed` runs only on the server",
+                "A `computed` needs no `.value` in the script"
+            ],
+            "answer": 1,
+            "explanation": "A `computed` is cached. A method runs again on every render.",
+            "lesson": "reactivity"
+        },
+        {
+            "question": "In `ChatComposer.vue`, `canSubmit` is a `computed`. What happens when the user types a character?",
+            "options": [
+                "Nothing, `canSubmit` is calculated only once",
+                "You have to update `canSubmit` yourself in an event handler",
+                "The page reloads completely",
+                "`form.body` changes, so Vue recalculates `canSubmit` and the button follows"
+            ],
+            "answer": 3,
+            "explanation": "`canSubmit` uses `form.body`. When that changes, Vue recalculates it and the button adapts.",
+            "lesson": "reactivity"
+        },
+        {
+            "question": "Why do you give `v-for` a `:key`?",
+            "options": [
+                "So Vue recognises each element when the list changes, preferably with a unique `id`",
+                "Because `v-for` otherwise throws an error in the browser",
+                "To sort the list",
+                "To filter the list"
+            ],
+            "answer": 0,
+            "explanation": "The key gives each element a stable identity, so Vue reuses the right elements after a change.",
+            "lesson": "template"
+        },
+        {
+            "question": "What does `@submit.prevent=\"add\"` do on a form?",
+            "options": [
+                "It submits the form twice",
+                "It calls `add` and lets the browser submit the form itself",
+                "It calls `add` and stops the browser from submitting the form itself",
+                "It hides the form"
+            ],
+            "answer": 2,
+            "explanation": "The `.prevent` modifier calls `preventDefault()` on the event, so the page does not reload.",
+            "lesson": "template"
+        },
+        {
+            "question": "A child component wants a prop `done` to change. What does it do?",
+            "options": [
+                "`props.done = true`, because props are plain variables",
+                "It sends an event, and the parent changes its own data",
+                "It reloads the page",
+                "It creates a new `computed` with the same name"
+            ],
+            "answer": 1,
+            "explanation": "Props are read-only. The child sends an event and the parent decides.",
+            "lesson": "props-events"
+        },
+        {
+            "question": "What does `defineEmits<{ toggle: [] }>()` declare?",
+            "options": [
+                "A prop `toggle` of type array",
+                "An empty list of events",
+                "A `computed` called `toggle`",
+                "An event `toggle` that is sent without data"
+            ],
+            "answer": 3,
+            "explanation": "Between the brackets are the arguments that come with the event. Here there are none.",
+            "lesson": "props-events"
+        },
+        {
+            "question": "Why does `useNow` clean up the timer in `onBeforeUnmount`?",
+            "options": [
+                "Because otherwise the timer keeps running after the component is gone",
+                "Because otherwise `onMounted` cannot start the timer",
+                "Because otherwise a `ref` is not reactive",
+                "Because otherwise Vue runs the timer on the server"
+            ],
+            "answer": 0,
+            "explanation": "What you start in `onMounted` must be cleaned up when the component goes away.",
+            "lesson": "composables"
+        },
+        {
+            "question": "When do you pick `watch` and when `computed`?",
+            "options": [
+                "`watch` to derive a value, `computed` for side effects",
+                "`watch` for a side effect on a change, `computed` for a derived value",
+                "They do the same thing, it makes no difference",
+                "`watch` only in templates, `computed` only in scripts"
+            ],
+            "answer": 1,
+            "explanation": "`computed` is for calculating a value. `watch` is for doing something, such as saving, when something changes.",
+            "lesson": "composables"
+        },
+        {
+            "question": "What does `Inertia::render('Board', [...])` do in a controller?",
+            "options": [
+                "It returns a JSON API response without Vue",
+                "It compiles `Board.vue` to HTML on the server and sends only HTML",
+                "It creates a Vue Router route",
+                "It picks the Vue page `Board` and passes the array as props"
+            ],
+            "answer": 3,
+            "explanation": "The name points to the page component and the array becomes its props.",
+            "lesson": "laravel"
+        },
+        {
+            "question": "You see `data() { return { count: 0 } }` and `this.count++`. What is the Composition API equivalent?",
+            "options": [
+                "`const count = ref(0)` and `count.value++`",
+                "`const count = computed(0)` and `count++`",
+                "`defineProps({ count: 0 })` and `props.count++`",
+                "`watch(count, 0)` and `count.value = 1`"
+            ],
+            "answer": 0,
+            "explanation": "`data()` becomes a `ref`, and `this.count` becomes `count.value` in the script.",
+            "lesson": "laravel"
+        }
+    ],
+    "sources": [
+        {
+            "title": "Single-File Components",
+            "url": "https://vuejs.org/guide/scaling-up/sfc.html"
+        },
+        {
+            "title": "Reactivity Fundamentals",
+            "url": "https://vuejs.org/guide/essentials/reactivity-fundamentals.html"
+        },
+        {
+            "title": "Computed Properties",
+            "url": "https://vuejs.org/guide/essentials/computed.html"
+        },
+        {
+            "title": "Template Syntax",
+            "url": "https://vuejs.org/guide/essentials/template-syntax.html"
+        },
+        {
+            "title": "Props",
+            "url": "https://vuejs.org/guide/components/props.html"
+        },
+        {
+            "title": "Composables",
+            "url": "https://vuejs.org/guide/reusability/composables.html"
+        },
+        {
+            "title": "Introduction (API styles)",
+            "url": "https://vuejs.org/guide/introduction.html"
+        },
+        {
+            "title": "Routing",
+            "url": "https://vuejs.org/guide/scaling-up/routing.html"
+        },
+        {
+            "title": "State Management",
+            "url": "https://vuejs.org/guide/scaling-up/state-management.html"
+        },
+        {
+            "title": "Quick Start",
+            "url": "https://vuejs.org/guide/quick-start.html"
+        },
+        {
+            "title": "Inertia: Pages",
+            "url": "https://inertiajs.com/pages"
+        },
+        {
+            "title": "Inertia: Shared data",
+            "url": "https://inertiajs.com/shared-data"
+        },
+        {
+            "title": "Inertia: Polling",
+            "url": "https://inertiajs.com/polling"
+        },
+        {
+            "title": "Inertia: Forms",
+            "url": "https://inertiajs.com/forms"
+        },
+        {
+            "title": "Inertia: Manual visits",
+            "url": "https://inertiajs.com/manual-visits"
+        }
+    ]
+}

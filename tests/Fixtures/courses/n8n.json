@@ -1,0 +1,158 @@
+{
+    "slug": "n8n",
+    "locale": "en",
+    "title": "n8n in an hour",
+    "summary": "Connect two services with a workflow in n8n and know the words around it.",
+    "minutes": 40,
+    "updated": "2026-11-25",
+    "lessons": [
+        {
+            "slug": "editor",
+            "title": "What n8n is and how the editor works",
+            "minutes": 10,
+            "blocks": [
+                {
+                    "type": "text",
+                    "text": "n8n is a tool that runs **workflows**. A workflow is a chain of nodes: a trigger starts it and other nodes do the work."
+                },
+                { "type": "heading", "text": "Nodes" },
+                {
+                    "type": "list",
+                    "items": [
+                        "A **trigger** starts the workflow",
+                        "An **action** does something, like sending a mail",
+                        "Data flows from node to node as items"
+                    ]
+                },
+                {
+                    "type": "steps",
+                    "items": [
+                        "Open the editor and add a trigger.",
+                        "Add an action node after it.",
+                        "Run the workflow and read the output."
+                    ]
+                },
+                {
+                    "type": "code",
+                    "language": "json",
+                    "caption": "One item",
+                    "code": "{ \"name\": \"Sam\", \"email\": \"sam@example.com\" }"
+                },
+                {
+                    "type": "table",
+                    "headers": ["Word", "Meaning"],
+                    "rows": [
+                        ["Node", "One step in a workflow"],
+                        ["Item", "One piece of data"],
+                        ["Execution", "One run of a workflow"]
+                    ]
+                },
+                {
+                    "type": "note",
+                    "label": "What you already know from Laravel",
+                    "text": "A workflow is like a queued job chain, drawn on a canvas."
+                },
+                {
+                    "type": "note",
+                    "label": "Say it like this in an interview",
+                    "text": "I used n8n to connect services without writing glue code, and read the [n8n docs](https://docs.n8n.io/) for the details."
+                }
+            ],
+            "check": {
+                "question": "What starts a workflow?",
+                "answer": "A trigger node."
+            },
+            "deeper": [
+                {
+                    "type": "text",
+                    "text": "Picture a row of dominoes. The trigger is the first one you push."
+                },
+                {
+                    "type": "text",
+                    "text": "Every node after it falls because the one before it fell."
+                }
+            ]
+        },
+        {
+            "slug": "data",
+            "title": "Data between nodes",
+            "minutes": 10,
+            "blocks": [
+                {
+                    "type": "text",
+                    "text": "Each node gets items from the node before it. You pick a field with an expression such as `{{ $json.email }}`."
+                },
+                {
+                    "type": "code",
+                    "language": "text",
+                    "code": "{{ $json.email }}"
+                },
+                {
+                    "type": "note",
+                    "label": "What you already know from Laravel",
+                    "text": "An expression reads a field of the current item, like `$request->email`."
+                },
+                {
+                    "type": "note",
+                    "label": "Say it like this in an interview",
+                    "text": "I map fields from one node to the next with expressions."
+                }
+            ],
+            "check": {
+                "question": "How do you read the email field of the current item?",
+                "answer": "With the expression `{{ $json.email }}`."
+            },
+            "deeper": [
+                {
+                    "type": "text",
+                    "text": "An item is a form that is passed down a desk. Each desk reads the boxes it needs."
+                },
+                {
+                    "type": "text",
+                    "text": "An expression tells the desk which box to read."
+                }
+            ]
+        }
+    ],
+    "exercise": {
+        "title": "Mail a new sign-up",
+        "minutes": 15,
+        "intro": "Send yourself a message when a form is submitted.",
+        "steps": [
+            "Add a Webhook trigger.",
+            "Add a node that sends an email.",
+            "Use an expression for the name."
+        ],
+        "starter": null,
+        "solution": [
+            {
+                "type": "text",
+                "text": "The webhook gives the item, the mail node reads `{{ $json.name }}`."
+            }
+        ]
+    },
+    "quiz": [
+        {
+            "question": "What is one piece of data in n8n called?",
+            "options": ["Row", "Item", "Record", "Packet"],
+            "answer": 1,
+            "explanation": "Nodes pass items.",
+            "lesson": "editor"
+        },
+        {
+            "question": "Which node type starts a workflow?",
+            "options": ["Trigger", "Merge", "Set", "Wait"],
+            "answer": 0,
+            "explanation": "A trigger starts the run.",
+            "lesson": "editor"
+        },
+        {
+            "question": "Which expression reads the email field?",
+            "options": ["email", "$email", "{{ $json.email }}", "json(email)"],
+            "answer": 2,
+            "explanation": "Expressions use `$json`.",
+            "lesson": "data"
+        }
+    ],
+    "sources": [{ "title": "n8n documentation", "url": "https://docs.n8n.io/" }]
+}

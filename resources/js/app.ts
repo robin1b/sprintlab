@@ -12,6 +12,7 @@ void createInertiaApp({
         switch (true) {
             // Public pages and the error page stand on their own, without the app shell.
             case ['Welcome', 'Privacy', 'ErrorPage'].includes(name):
+            case name.startsWith('courses/'):
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;

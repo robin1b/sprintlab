@@ -119,6 +119,15 @@ const link = 'underline underline-offset-4 hover:text-primary';
                         the scores and evaluation that came out of it.
                     </li>
                     <li>
+                        <strong>Your course progress.</strong> The courses are
+                        public: you can read them without an account. When you
+                        are signed in, Sprintlab stores per lesson whether you
+                        marked it as understood or not yet, and your quiz
+                        results (the score, and the answers you gave). None of
+                        this is sent to the AI. Without an account, your
+                        progress stays in your own browser.
+                    </li>
+                    <li>
                         <strong>Technical data.</strong> While you are signed
                         in, your session holds your IP address and browser type.
                         The server keeps log files (time, requested page,
@@ -212,6 +221,12 @@ const link = 'underline underline-offset-4 hover:text-primary';
                     storage, so the video does not start again. The entry says
                     nothing about you and is never sent to Sprintlab.
                 </p>
+                <p>
+                    When you read a course without an account, your browser
+                    remembers which lessons you marked in the same way, with one
+                    entry per course in its local storage. That entry is never
+                    sent to Sprintlab either.
+                </p>
 
                 <h2>How long data is kept</h2>
                 <ul>
@@ -220,7 +235,8 @@ const link = 'underline underline-offset-4 hover:text-primary';
                         delete your account. In Settings you can delete your
                         account yourself. That removes your account, your
                         sprints, messages, reviews and evaluations at once, and
-                        removes the Sprintlab app from your repository.
+                        removes the Sprintlab app from your repository. Your
+                        course progress and quiz results are removed with it.
                     </li>
                     <li>
                         Reviews that were already posted on GitHub stay in your

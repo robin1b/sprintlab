@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { Gauge, KanbanSquare, LayoutGrid, MessageSquare } from '@lucide/vue';
+import {
+    Gauge,
+    GraduationCap,
+    KanbanSquare,
+    LayoutGrid,
+    MessageSquare,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -16,6 +22,7 @@ import {
 } from '@/components/ui/sidebar';
 import { board, chat, dashboard, privacy } from '@/routes';
 import { usage } from '@/routes/admin';
+import { index as courses } from '@/routes/courses';
 import { restart } from '@/routes/tour';
 import type { NavItem } from '@/types';
 
@@ -31,6 +38,7 @@ const mainNavItems = computed<NavItem[]>(() => [
         badge: page.props.unreadMessages,
         tour: 'nav-chat',
     },
+    { title: 'Courses', href: courses(), icon: GraduationCap },
 ]);
 
 function replayTour(): void {

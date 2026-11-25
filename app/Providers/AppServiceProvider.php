@@ -3,10 +3,12 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Services\Courses\CourseLibrary;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -33,6 +35,9 @@ class AppServiceProvider extends ServiceProvider
             (array) config('sprintlab.admin_github_ids'),
             true,
         ));
+
+        // `{course}` in a route is a course file; an unknown slug is a 404.
+        Route::bind('course', fn (string $slug) => $this->app->make(CourseLibrary::class)->find($slug) ?? abort(404));
     }
 
     /**
